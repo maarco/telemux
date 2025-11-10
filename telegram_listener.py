@@ -77,7 +77,7 @@ def load_telegram_config():
     try:
         # Source the bash config file to get env vars
         result = subprocess.run(
-            f"source {TELEGRAM_CONFIG} && echo $TELEGRAM_BOT_TOKEN && echo $TELEGRAM_CHAT_ID",
+            f"source {TELEGRAM_CONFIG} && echo $TELEMUX_TG_BOT_TOKEN && echo $TELEMUX_TG_CHAT_ID",
             shell=True,
             capture_output=True,
             text=True,
