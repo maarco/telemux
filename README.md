@@ -1,18 +1,6 @@
 # TeleMux: Bidirectional Telegram Bridge for Any LLM CLI
 
 > Universal Telegram integration for LLM CLIs (Claude Code, Codex, Gemini-CLI, etc.) and AI agents running in tmux - send messages to your phone and receive replies back in real-time
-# TeleMux: Bidirectional Telegram Bridge for Any LLM CLI
-
-> Universal Telegram integration for LLM CLIs (Claude Code, Codex, Gemini-CLI, etc.) and AI agents running in tmux - send messages to your phone and receive replies back in real-time
-# TeleMux: Bidirectional Telegram Bridge for Any LLM CLI
-
-> Universal Telegram integration for LLM CLIs (Claude Code, Codex, Gemini-CLI, etc.) and AI agents running in tmux - send messages to your phone and receive replies back in real-time
-# TeleMux: Bidirectional Telegram Bridge for Any LLM CLI
-
-> Universal Telegram integration for LLM CLIs (Claude Code, Codex, Gemini-CLI, etc.) and AI agents running in tmux - send messages to your phone and receive replies back in real-time
-# TeleMux: Bidirectional Telegram Bridge for Any LLM CLI
-
-> Universal Telegram integration for LLM CLIs (Claude Code, Codex, Gemini-CLI, etc.) and AI agents running in tmux - send messages to your phone and receive replies back in real-time
 
 TeleMux enables **true bidirectional communication** between your AI agents running in tmux and you via Telegram. Agents can ask questions, request approvals, or send alerts to your phone, and you can reply directly - your responses are delivered back to the agent's tmux session in real-time.
 
@@ -101,7 +89,6 @@ cat > ~/.telegram_config << 'EOF'
 
 export TELEMUX_TG_BOT_TOKEN="your-bot-token-here"
 export TELEMUX_TG_CHAT_ID="your-chat-id-here"  # Use negative number for groups
-export TELEGRAM_PERSONAL_CHAT_ID="your-personal-chat-id"  # Optional: for DMs
 EOF
 
 chmod 600 ~/.telegram_config
@@ -329,8 +316,8 @@ done
 import subprocess
 import os
 
-def ask_marco(question):
-    """Ask User a question via Telegram"""
+def ask_user_telegram(question):
+    """Ask user a question via Telegram"""
     result = subprocess.run(
         ['bash', '-c', f'source ~/.zshrc && tg_agent "ai-agent" "{question}"'],
         capture_output=True,
@@ -338,8 +325,8 @@ def ask_marco(question):
     )
     return result.stdout.strip()
 
-def get_marco_reply():
-    """Check inbox for User's reply"""
+def get_user_reply():
+    """Check inbox for user's reply"""
     inbox = os.path.expanduser("~/.telemux/agents/ai-agent/inbox.txt")
     if os.path.exists(inbox):
         with open(inbox) as f:
@@ -352,9 +339,9 @@ def get_marco_reply():
     return None
 
 # Usage
-ask_marco("Should I proceed with data migration?")
+ask_user_telegram("Should I proceed with data migration?")
 # ... wait for reply or poll inbox ...
-reply = get_marco_reply()
+reply = get_user_reply()
 if "yes" in reply.lower():
     migrate_data()
 ```
@@ -561,12 +548,12 @@ A: `tg_alert()` works anywhere. `tg_agent()` requires tmux for bidirectional rep
 A: No, you need to run `tg-start` after reboot. Consider adding to startup scripts.
 
 **Q: Can I customize the message format?**
-A: Yes! Edit `telegram_listener.py` line 206 to change the `[FROM MARCO via Telegram]` prefix.
+A: Yes! Edit `telegram_listener.py` line 206 to change the `[FROM USER via Telegram]` prefix.
 
 ## Credits
 
-Built for User's AI agent automation system.
-Part of the Team Mux multi-agent coordination framework.
+Originally built for AI agent automation workflows.
+Open-sourced for the community to enable better human-AI agent collaboration.
 
 ## License
 
