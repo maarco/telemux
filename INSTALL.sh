@@ -134,9 +134,12 @@ tg_alert() {
         return 1
     fi
 
+    # Get tmux session name for context
+    local tmux_session="$(tmux display-message -p '#S' 2>/dev/null || echo 'terminal')"
+
     curl -s -X POST "https://api.telegram.org/bot${TELEMUX_TG_BOT_TOKEN}/sendMessage" \
         -d chat_id="${TELEMUX_TG_CHAT_ID}" \
-        -d text="🔔 ${message}" \
+        -d text="🔔 <b>[${tmux_session}]</b> ${message}" \
         -d parse_mode="HTML" > /dev/null && echo "✓ Alert sent to Telegram"
 }
 
