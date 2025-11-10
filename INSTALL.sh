@@ -14,9 +14,9 @@ echo ""
 
 # Check prerequisites
 echo "Checking prerequisites..."
-command -v tmux >/dev/null 2>&1 || { echo "❌ tmux is required but not installed. Aborting." >&2; exit 1; }
-command -v python3 >/dev/null 2>&1 || { echo "❌ python3 is required but not installed. Aborting." >&2; exit 1; }
-command -v curl >/dev/null 2>&1 || { echo "❌ curl is required but not installed. Aborting." >&2; exit 1; }
+command -v tmux >/dev/null 2>&1 || { echo "ERROR: tmux is required but not installed. Aborting." >&2; exit 1; }
+command -v python3 >/dev/null 2>&1 || { echo "ERROR: python3 is required but not installed. Aborting." >&2; exit 1; }
+command -v curl >/dev/null 2>&1 || { echo "ERROR: curl is required but not installed. Aborting." >&2; exit 1; }
 
 # Check Python version
 PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
@@ -24,19 +24,19 @@ echo "Python version: $PYTHON_VERSION"
 
 # Check pip
 if ! command -v pip3 >/dev/null 2>&1; then
-    echo "⚠️  pip3 not found. Attempting to continue without dependency check..."
+    echo "WARNING: pip3 not found. Attempting to continue without dependency check..."
 fi
 
-echo "✅ All prerequisites met"
+echo "All prerequisites met"
 echo ""
 
 # Install Python dependencies
 if [ -f "$SCRIPT_DIR/requirements.txt" ] && command -v pip3 >/dev/null 2>&1; then
     echo "Installing Python dependencies..."
     if pip3 install -r "$SCRIPT_DIR/requirements.txt" --quiet; then
-        echo "✅ Python dependencies installed"
+        echo "Python dependencies installed"
     else
-        echo "⚠️  Failed to install some dependencies. Installation will continue..."
+        echo "WARNING: Failed to install some dependencies. Installation will continue..."
         echo "   You may need to manually run: pip3 install -r $SCRIPT_DIR/requirements.txt"
     fi
     echo ""
@@ -55,7 +55,7 @@ UPDATES_RESPONSE=$(curl -s "https://api.telegram.org/bot${BOT_TOKEN}/getUpdates"
 if echo "$UPDATES_RESPONSE" | grep -q '"ok":true'; then
     BOT_INFO=$(curl -s "https://api.telegram.org/bot${BOT_TOKEN}/getMe")
     BOT_NAME=$(echo "$BOT_INFO" | grep -o '"first_name":"[^"]*"' | cut -d'"' -f4)
-    echo "✅ Bot token valid: $BOT_NAME"
+    echo "Bot token valid: $BOT_NAME"
     echo ""
 
     # Parse and display available chats
@@ -134,7 +134,7 @@ if echo "$UPDATES_RESPONSE" | grep -q '"ok":true'; then
         read -p "Enter your Chat ID (or press Ctrl+C to exit): " CHAT_ID
     fi
 else
-    echo "❌ Invalid bot token. Please check and try again."
+    echo "ERROR: Invalid bot token. Please check and try again."
     echo "Response: $UPDATES_RESPONSE"
     exit 1
 fi
@@ -142,7 +142,7 @@ fi
 # Create TeleMux directory
 echo "Creating ~/.telemux directory..."
 mkdir -p ~/.telemux/message_queue
-echo "✅ Directory structure created"
+echo "Directory structure created"
 echo ""
 
 # Create config file
@@ -157,7 +157,7 @@ export TELEMUX_TG_CHAT_ID="${CHAT_ID}"
 EOF
 
 chmod 600 ~/.telemux/telegram_config
-echo "✅ Config file created and secured"
+echo "Config file created and secured"
 echo ""
 
 # Install files
@@ -174,7 +174,7 @@ if [ -f "$SCRIPT_DIR/cleanup-logs.sh" ]; then
     chmod +x ~/.telemux/cleanup-logs.sh
 fi
 
-echo "✅ Files installed"
+echo "Files installed"
 echo ""
 
 # Detect shell
@@ -184,7 +184,7 @@ if [ -n "$ZSH_VERSION" ]; then
 elif [ -n "$BASH_VERSION" ]; then
     SHELL_RC="$HOME/.bashrc"
 else
-    echo "❌ Could not detect shell (bash/zsh). Unsupported shell."
+    echo "ERROR: Could not detect shell (bash/zsh). Unsupported shell."
     echo "   Please manually add functions to your rc file."
     echo "   See README.md for shell function code."
     exit 1
@@ -192,12 +192,12 @@ fi
 
 # Check if already installed
 if grep -q "# TELEGRAM NOTIFICATIONS" "$SHELL_RC" 2>/dev/null; then
-    echo "⚠️  Shell functions already exist in $SHELL_RC"
+    echo "WARNING: Shell functions already exist in $SHELL_RC"
     read -p "Overwrite? (y/n): " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo "Skipping shell function installation"
-        echo "✅ Installation complete (files only)"
+        echo "Installation complete (files only)"
         exit 0
     fi
 fi
@@ -206,7 +206,7 @@ fi
 echo "Deploying shell functions..."
 cp "$SCRIPT_DIR/shell_functions.sh" "$TELEMUX_DIR/"
 chmod +x "$TELEMUX_DIR/shell_functions.sh"
-echo "✅ Shell functions deployed to ~/.telemux/"
+echo "Shell functions deployed to ~/.telemux/"
 
 # Add shell functions to shell RC by sourcing the single source file
 echo "Adding shell functions to $SHELL_RC..."
@@ -222,7 +222,7 @@ fi
 
 SHELL_FUNCTIONS
 
-echo "✅ Shell functions added (sourced from ~/.telemux/shell_functions.sh)"
+echo "Shell functions added (sourced from ~/.telemux/shell_functions.sh)"
 echo ""
 
 # Test installation
@@ -237,22 +237,21 @@ SEND_RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${TELEMUX_TG_BOT_TO
     -d parse_mode="HTML")
 
 if echo "$SEND_RESPONSE" | grep -q '"ok":true'; then
-    echo "✅ Test message sent successfully to chat $TELEMUX_TG_CHAT_ID"
+    echo "Test message sent successfully to chat $TELEMUX_TG_CHAT_ID"
 else
-    echo "❌ Failed to send test message. Please verify your chat ID."
+    echo "ERROR: Failed to send test message. Please verify your chat ID."
     echo "Response: $SEND_RESPONSE"
     exit 1
 fi
 
 echo ""
 echo "================================"
-echo "✅ Installation Complete!"
+echo "Installation Complete!"
 echo "================================"
 echo ""
 echo "Next steps:"
 echo "  1. Reload your shell: source $SHELL_RC"
 echo "  2. Start the listener: tg-start"
-echo "  3. Test it: tg_alert 'Hello from terminal!'"
 echo ""
 echo "See README.md for full documentation and examples."
 echo ""
@@ -263,14 +262,14 @@ if [ -f "$HOME/.claude/CLAUDE.md" ]; then
     echo "Claude Code Integration"
     echo "================================"
     echo ""
-    echo "📋 Found Claude Code configuration at ~/.claude/CLAUDE.md"
+    echo "Found Claude Code configuration at ~/.claude/CLAUDE.md"
     echo ""
     read -p "Add TeleMux documentation to Claude config? (y/n): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         # Check if TeleMux section already exists
         if grep -q "# TeleMux" "$HOME/.claude/CLAUDE.md" 2>/dev/null; then
-            echo "⚠️  TeleMux section already exists in Claude config"
+            echo "WARNING: TeleMux section already exists in Claude config"
         else
             cat >> "$HOME/.claude/CLAUDE.md" << 'CLAUDE_DOC'
 
@@ -307,7 +306,7 @@ tg_agent "deploy-agent" "Ready to deploy to production?"
 See: `~/.telemux/` for configuration and logs.
 
 CLAUDE_DOC
-            echo "✅ TeleMux documentation added to Claude config"
+            echo "TeleMux documentation added to Claude config"
         fi
     else
         echo "Skipped Claude config update"
