@@ -13,8 +13,31 @@ echo "Checking prerequisites..."
 command -v tmux >/dev/null 2>&1 || { echo "❌ tmux is required but not installed. Aborting." >&2; exit 1; }
 command -v python3 >/dev/null 2>&1 || { echo "❌ python3 is required but not installed. Aborting." >&2; exit 1; }
 command -v curl >/dev/null 2>&1 || { echo "❌ curl is required but not installed. Aborting." >&2; exit 1; }
+
+# Check Python version
+PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
+echo "Python version: $PYTHON_VERSION"
+
+# Check pip
+if ! command -v pip3 >/dev/null 2>&1; then
+    echo "⚠️  pip3 not found. Attempting to continue without dependency check..."
+fi
+
 echo "✅ All prerequisites met"
 echo ""
+
+# Install Python dependencies
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/requirements.txt" ] && command -v pip3 >/dev/null 2>&1; then
+    echo "Installing Python dependencies..."
+    if pip3 install -r "$SCRIPT_DIR/requirements.txt" --quiet; then
+        echo "✅ Python dependencies installed"
+    else
+        echo "⚠️  Failed to install some dependencies. Installation will continue..."
+        echo "   You may need to manually run: pip3 install -r $SCRIPT_DIR/requirements.txt"
+    fi
+    echo ""
+fi
 
 # Get Telegram credentials
 echo "=== Telegram Configuration ==="
@@ -52,6 +75,11 @@ chmod +x ~/.telemux/telegram_listener.py
 
 cp "$SCRIPT_DIR/telegram_control.sh" ~/.telemux/
 chmod +x ~/.telemux/telegram_control.sh
+
+if [ -f "$SCRIPT_DIR/cleanup-logs.sh" ]; then
+    cp "$SCRIPT_DIR/cleanup-logs.sh" ~/.telemux/
+    chmod +x ~/.telemux/cleanup-logs.sh
+fi
 
 echo "✅ Files installed"
 echo ""
@@ -161,6 +189,8 @@ alias tg-stop="$HOME/.telemux/telegram_control.sh stop"
 alias tg-status="$HOME/.telemux/telegram_control.sh status"
 alias tg-logs="$HOME/.telemux/telegram_control.sh logs"
 alias tg-restart="$HOME/.telemux/telegram_control.sh restart"
+alias tg-cleanup="$HOME/.telemux/telegram_control.sh cleanup"
+alias tg-doctor="$HOME/.telemux/telegram_control.sh doctor"
 
 SHELL_FUNCTIONS
 

@@ -8,10 +8,10 @@ Initial release of TeleMux bidirectional Telegram bridge.
 
 ✅ **Simple Alerts**
 - `tg_alert()` - Send one-way notifications to Telegram
-- `alert_done()` - Alert when commands complete (with exit status)
+- `tg_done()` - Alert when commands complete (with exit status)
 
 ✅ **Bidirectional Messaging**
-- `tg_alert_agent()` - Send messages from agents and receive replies
+- `tg_agent()` - Send messages from agents and receive replies
 - Message routing via tmux session names
 - Direct delivery to tmux sessions via `send-keys`
 
@@ -28,7 +28,7 @@ Initial release of TeleMux bidirectional Telegram bridge.
 
 ✅ **Clean API**
 - Session name as message ID (simple format)
-- Formatted delivery: `[FROM MARCO via Telegram] message`
+- Formatted delivery: `[FROM USER via Telegram] message`
 - Sleep + Enter for proper tmux injection
 
 ### Components
@@ -89,6 +89,6 @@ See QUICKSTART.md for full setup guide.
 
 ---
 
-**Built for:** AI Agent Automation Systems
-**Part of:** Team Mux Multi-Agent Framework
+**Built for:** AI Agent Automation & LLM CLI Integration
+**Project:** TeleMux - Bidirectional Telegram Bridge
 **License:** MIT
