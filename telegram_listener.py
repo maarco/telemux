@@ -369,7 +369,7 @@ def process_update(update: Dict[str, Any]) -> None:
         # tmux send-keys interprets special characters like $(), ``, &&, ;
         # Without sanitization, malicious input could execute arbitrary commands
         safe_response = shlex.quote(response)
-        formatted_message = f"[FROM USER via Telegram] {safe_response}"
+        formatted_message = f"[FROM USER via Telegram] {safe_response}\n#respond using: tg_alert \"your response\""
 
         # Send message to tmux session
         result = subprocess.run(
