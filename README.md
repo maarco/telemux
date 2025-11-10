@@ -535,6 +535,26 @@ while true; do
 done
 ```
 
+## Documentation
+
+### Core Documentation
+- **[Quick Start Guide](docs/QUICKSTART.md)** - 5-minute setup guide
+- **[ROADMAP.md](ROADMAP.md)** - Development roadmap and v1.0 progress
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and release notes
+
+### Developer Documentation
+- **[Technical Documentation](docs/CLAUDE.md)** - Architecture and internal design for AI assistants
+- **[Compatible LLMs](docs/COMPATIBLE_LLMS.md)** - Supported LLM CLI tools
+- **[Security Audit](docs/SECURITY_AUDIT.md)** - Security checklist for v1.0 release
+- **[Test Suite](tests/README.md)** - Testing guide (56 passing tests)
+
+### Scripts & Tools
+- `benchmark.sh` - Performance testing tool
+- `INSTALL.sh` - Automated installer
+- `UPDATE.sh` - Update existing installations
+- `UNINSTALL.sh` - Complete removal with backup
+- `MIGRATE.sh` - Migrate from legacy Team Mux
+
 ## FAQ
 
 **Q: Can multiple agents use this simultaneously?**
