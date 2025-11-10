@@ -189,9 +189,67 @@ echo "✅ Installation Complete!"
 echo "================================"
 echo ""
 echo "Next steps:"
-echo "  1. Reload your shell: source ~/$SHELL_RC"
+echo "  1. Reload your shell: source $SHELL_RC"
 echo "  2. Start the listener: tg-start"
 echo "  3. Test it: tg_alert 'Hello from terminal!'"
 echo ""
 echo "See README.md for full documentation and examples."
 echo ""
+
+# Optional: Add to Claude Code configuration
+if [ -f "$HOME/.claude/CLAUDE.md" ]; then
+    echo "================================"
+    echo "Claude Code Integration"
+    echo "================================"
+    echo ""
+    echo "📋 Found Claude Code configuration at ~/.claude/CLAUDE.md"
+    echo ""
+    read -p "Add TeleMux documentation to Claude config? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        # Check if TeleMux section already exists
+        if grep -q "# TeleMux" "$HOME/.claude/CLAUDE.md" 2>/dev/null; then
+            echo "⚠️  TeleMux section already exists in Claude config"
+        else
+            cat >> "$HOME/.claude/CLAUDE.md" << 'CLAUDE_DOC'
+
+---
+
+# TeleMux - Telegram Integration
+
+TeleMux is installed and available for bidirectional communication with Telegram.
+
+## Available Functions
+
+- `tg_alert "message"` - Send one-way notifications to Telegram
+- `tg_agent "agent-name" "message"` - Send message and receive replies
+- `tg_done` - Alert when previous command completes
+
+## Control Commands
+
+- `tg-start` - Start the listener daemon
+- `tg-stop` - Stop the listener daemon
+- `tg-status` - Check daemon status
+- `tg-logs` - View listener logs
+
+## Usage in Agents
+
+When running in tmux, agents can use `tg_agent` to ask questions and receive user replies via Telegram. Replies are delivered directly back to the tmux session.
+
+**Example:**
+```bash
+tg_agent "deploy-agent" "Ready to deploy to production?"
+# User replies via Telegram: "session-name: yes"
+# Reply appears in terminal
+```
+
+See: `~/.telemux/` for configuration and logs.
+
+CLAUDE_DOC
+            echo "✅ TeleMux documentation added to Claude config"
+        fi
+    else
+        echo "Skipped Claude config update"
+    fi
+    echo ""
+fi
