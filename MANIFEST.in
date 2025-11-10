@@ -1,0 +1,15 @@
+# Include shell functions
+include telemux/shell_functions.sh
+
+# Include documentation
+include README.md
+include LICENSE
+include CHANGELOG.md
+
+# Include example scripts
+recursive-include examples *.sh
+
+# Exclude tests and development files
+exclude tests/*
+exclude .gitignore
+exclude .python-version

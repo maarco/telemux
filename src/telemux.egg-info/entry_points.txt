@@ -1,0 +1,15 @@
+[console_scripts]
+telemux = telemux.cli:main
+telemux-attach = telemux.control:attach
+telemux-cleanup = telemux.cleanup:main
+telemux-doctor = telemux.control:doctor
+telemux-install = telemux.installer:main
+telemux-logs = telemux.control:logs
+telemux-restart = telemux.control:restart
+telemux-start = telemux.control:start
+telemux-status = telemux.control:status
+telemux-stop = telemux.control:stop
+tg-logs = telemux.control:logs
+tg-start = telemux.control:start
+tg-status = telemux.control:status
+tg-stop = telemux.control:stop

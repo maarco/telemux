@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "telemux"
+version = "1.0.2"
+description = "Bidirectional Telegram integration for tmux sessions - monitor commands and interact with agents"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "MIT"}
+authors = [
+    {name = "Marco Almazan", email = "marco@example.com"}
+]
+keywords = ["telegram", "tmux", "notifications", "monitoring", "agent", "automation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Communications :: Chat",
+    "Topic :: System :: Monitoring",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+]
+
+dependencies = [
+    "requests>=2.25.0,<3.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-mock>=3.11.1",
+    "pytest-cov>=4.1.0",
+    "responses>=0.23.0",
+]
+
+[project.scripts]
+telemux = "telemux.cli:main"
+telemux-install = "telemux.installer:main"
+telemux-start = "telemux.control:start"
+telemux-stop = "telemux.control:stop"
+telemux-restart = "telemux.control:restart"
+telemux-status = "telemux.control:status"
+telemux-logs = "telemux.control:logs"
+telemux-attach = "telemux.control:attach"
+telemux-cleanup = "telemux.cleanup:main"
+telemux-doctor = "telemux.control:doctor"
+tg-start = "telemux.control:start"
+tg-stop = "telemux.control:stop"
+tg-status = "telemux.control:status"
+tg-logs = "telemux.control:logs"
+
+[project.urls]
+Homepage = "https://github.com/malmazan/telemux"
+Repository = "https://github.com/malmazan/telemux"
+Issues = "https://github.com/malmazan/telemux/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["telemux"]
+
+[tool.setuptools.package-data]
+telemux = ["shell_functions.sh"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --cov=telemux --cov-report=term-missing"
