@@ -212,9 +212,12 @@ session-name: your message content
 ```bash
 tg-start      # Start the listener daemon
 tg-stop       # Stop the listener daemon
+tg-restart    # Restart the listener daemon
 tg-status     # Check if listener is running
 tg-logs       # Tail the listener logs
-tg-restart    # Restart the listener daemon
+tg-attach     # Attach to the listener session
+tg-cleanup    # Rotate and clean up log files
+tg-doctor     # Run health check and diagnostics
 ```
 
 ## File Locations
@@ -488,6 +491,7 @@ done
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history and release notes
 
 ### Developer Documentation
+- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute to TeleMux
 - **[Technical Documentation](docs/CLAUDE.md)** - Architecture and internal design for AI assistants
 - **[Compatible LLMs](docs/COMPATIBLE_LLMS.md)** - Supported LLM CLI tools
 - **[Security Audit](docs/SECURITY_AUDIT.md)** - Security checklist for v1.0 release
@@ -515,7 +519,7 @@ A: `tg_alert()` works anywhere. `tg_agent()` requires tmux for bidirectional rep
 A: No, you need to run `tg-start` after reboot. Consider adding to startup scripts.
 
 **Q: Can I customize the message format?**
-A: Yes! Edit `telegram_listener.py` line 206 to change the `[FROM USER via Telegram]` prefix.
+A: Yes! Edit `telegram_listener.py` line 291 to change the `[FROM USER via Telegram]` prefix.
 
 ## Credits
 
