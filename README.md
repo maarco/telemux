@@ -38,6 +38,8 @@ TeleMux enables **true bidirectional communication** between your AI agents runn
 
 ## Quick Start
 
+> **Updating?** If you already have TeleMux installed, run `./UPDATE.sh` instead to upgrade to the latest version.
+
 ### Prerequisites
 
 - Telegram account
