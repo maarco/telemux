@@ -139,8 +139,8 @@ tg_alert() {
 
     curl -s -X POST "https://api.telegram.org/bot${TELEMUX_TG_BOT_TOKEN}/sendMessage" \
         -d chat_id="${TELEMUX_TG_CHAT_ID}" \
-        -d text="🔔 <b>[${tmux_session}]</b> ${message}" \
-        -d parse_mode="HTML" > /dev/null && echo "✓ Alert sent to Telegram"
+        -d text="[!] <b>[${tmux_session}]</b> ${message}" \
+        -d parse_mode="HTML" > /dev/null && echo "[+] Alert sent to Telegram"
 }
 
 # Bidirectional agent alert - sends message and can receive replies
@@ -164,12 +164,12 @@ tg_agent() {
     # Send to Telegram with identifier
     curl -s -X POST "https://api.telegram.org/bot${TELEMUX_TG_BOT_TOKEN}/sendMessage" \
         -d chat_id="${TELEMUX_TG_CHAT_ID}" \
-        -d text="🤖 <b>[${agent_name}:${msg_id}]</b>
+        -d text="[>] <b>[${agent_name}:${msg_id}]</b>
 
 ${message}
 
 <i>Reply with: ${msg_id}: your response</i>" \
-        -d parse_mode="HTML" > /dev/null && echo "✓ Agent alert sent: ${msg_id}"
+        -d parse_mode="HTML" > /dev/null && echo "[+] Agent alert sent: ${msg_id}"
 
     echo "$msg_id"  # Return message ID
 }
@@ -180,9 +180,9 @@ tg_done() {
     local cmd="${history[$((HISTCMD-1))]}"
 
     if [[ $exit_code -eq 0 ]]; then
-        tg_alert "✅ Command completed: ${cmd}"
+        tg_alert "[+] Command completed: ${cmd}"
     else
-        tg_alert "❌ Command failed (exit $exit_code): ${cmd}"
+        tg_alert "[-] Command failed (exit $exit_code): ${cmd}"
     fi
 }
 
