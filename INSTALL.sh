@@ -46,7 +46,76 @@ fi
 echo "=== Telegram Configuration ==="
 echo ""
 read -p "Enter your Telegram Bot Token: " BOT_TOKEN
-read -p "Enter your Chat ID (group or personal): " CHAT_ID
+
+# Test bot token and fetch available chats
+echo ""
+echo "Testing bot token and fetching available chats..."
+UPDATES_RESPONSE=$(curl -s "https://api.telegram.org/bot${BOT_TOKEN}/getUpdates")
+
+if echo "$UPDATES_RESPONSE" | grep -q '"ok":true'; then
+    BOT_INFO=$(curl -s "https://api.telegram.org/bot${BOT_TOKEN}/getMe")
+    BOT_NAME=$(echo "$BOT_INFO" | grep -o '"first_name":"[^"]*"' | cut -d'"' -f4)
+    echo "✅ Bot token valid: $BOT_NAME"
+    echo ""
+
+    # Parse and display available chats
+    echo "Available chats (send a message to your bot first if empty):"
+    echo "-----------------------------------------------------------"
+
+    # Extract chat IDs and titles/names
+    CHAT_COUNT=$(echo "$UPDATES_RESPONSE" | grep -o '"chat":{[^}]*}' | wc -l | tr -d ' ')
+
+    if [ "$CHAT_COUNT" -gt 0 ]; then
+        # Create temp file for deduplication
+        TEMP_CHATS=$(mktemp)
+
+        echo "$UPDATES_RESPONSE" | grep -o '"chat":{[^}]*}' | while IFS= read -r chat; do
+            CHAT_ID=$(echo "$chat" | grep -o '"id":[^,}]*' | head -1 | cut -d':' -f2 | tr -d ' ')
+            CHAT_TYPE=$(echo "$chat" | grep -o '"type":"[^"]*"' | cut -d'"' -f4)
+
+            # Try to get name/title
+            if echo "$chat" | grep -q '"title"'; then
+                CHAT_NAME=$(echo "$chat" | grep -o '"title":"[^"]*"' | cut -d'"' -f4)
+            elif echo "$chat" | grep -q '"first_name"'; then
+                FIRST_NAME=$(echo "$chat" | grep -o '"first_name":"[^"]*"' | cut -d'"' -f4)
+                LAST_NAME=$(echo "$chat" | grep -o '"last_name":"[^"]*"' | cut -d'"' -f4 || echo "")
+                CHAT_NAME="$FIRST_NAME $LAST_NAME"
+            else
+                CHAT_NAME="Unknown"
+            fi
+
+            echo "$CHAT_ID|$CHAT_TYPE|$CHAT_NAME"
+        done | sort -u > "$TEMP_CHATS"
+
+        # Display unique chats
+        while IFS='|' read -r cid ctype cname; do
+            echo "  Chat ID: $cid"
+            echo "  Type: $ctype"
+            echo "  Name: $cname"
+            echo "-----------------------------------------------------------"
+        done < "$TEMP_CHATS"
+
+        rm -f "$TEMP_CHATS"
+
+        echo ""
+        echo "Note: Group chat IDs are negative, personal chat IDs are positive"
+    else
+        echo "  No chats found. You need to:"
+        echo "  1. Start a conversation with your bot (send any message)"
+        echo "  2. Or add the bot to a group and send a message"
+        echo "  3. Then run this installer again"
+        echo ""
+        echo "  Or manually get your chat ID:"
+        echo "  curl \"https://api.telegram.org/bot${BOT_TOKEN}/getUpdates\" | jq '.'"
+    fi
+else
+    echo "❌ Invalid bot token. Please check and try again."
+    echo "Response: $UPDATES_RESPONSE"
+    exit 1
+fi
+
+echo ""
+read -p "Enter your Chat ID (from above or manual): " CHAT_ID
 
 # Create TeleMux directory
 echo "Creating ~/.telemux directory..."
@@ -138,15 +207,18 @@ echo ""
 echo "=== Testing Installation ==="
 source ~/.telemux/telegram_config
 
-echo "Testing Telegram bot connection..."
-RESPONSE=$(curl -s "https://api.telegram.org/bot${TELEMUX_TG_BOT_TOKEN}/getMe")
+echo "Verifying chat ID..."
+TEST_MESSAGE="TeleMux installation test - $(date)"
+SEND_RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${TELEMUX_TG_BOT_TOKEN}/sendMessage" \
+    -d chat_id="${TELEMUX_TG_CHAT_ID}" \
+    -d text="$TEST_MESSAGE" \
+    -d parse_mode="HTML")
 
-if echo "$RESPONSE" | grep -q '"ok":true'; then
-    BOT_NAME=$(echo "$RESPONSE" | grep -o '"first_name":"[^"]*"' | cut -d'"' -f4)
-    echo "✅ Bot connection successful: $BOT_NAME"
+if echo "$SEND_RESPONSE" | grep -q '"ok":true'; then
+    echo "✅ Test message sent successfully to chat $TELEMUX_TG_CHAT_ID"
 else
-    echo "❌ Bot connection failed. Please check your bot token."
-    echo "Response: $RESPONSE"
+    echo "❌ Failed to send test message. Please verify your chat ID."
+    echo "Response: $SEND_RESPONSE"
     exit 1
 fi
 
