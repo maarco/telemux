@@ -315,7 +315,7 @@ Message ID: {message_id}
 
 
 def process_update(update: Dict):
-    """Process a single Telegram update"""
+    """Process a single Telegram update - NEW SESSION-BASED ROUTING"""
     if "message" not in update:
         return
 
@@ -325,24 +325,62 @@ def process_update(update: Dict):
 
     logger.info(f"Received message from {from_user}: {text[:50]}...")
 
-    # Parse message for agent response
+    # Parse message for session: message format
     parsed = parse_message_id(text)
     if not parsed:
-        logger.info("Message doesn't match agent response format, ignoring")
+        logger.info("Message doesn't match format (session-name: message), ignoring")
         return
 
-    message_id, response = parsed
-    logger.info(f"Parsed agent response - ID: {message_id}")
+    session_name, response = parsed
+    logger.info(f"Parsed message - Target session: {session_name}")
 
-    # Lookup agent
-    agent_info = lookup_agent(message_id)
-    if not agent_info:
-        logger.warning(f"No agent found for message ID: {message_id}")
-        send_telegram_message(f"❌ Unknown message ID: {message_id}")
-        return
+    # Check if tmux session exists
+    try:
+        result = subprocess.run(
+            ['tmux', 'list-sessions', '-F', '#{session_name}'],
+            capture_output=True,
+            text=True,
+            check=False
+        )
 
-    # Route to agent
-    route_to_agent(agent_info, response)
+        if result.returncode != 0:
+            # No tmux sessions at all
+            logger.warning("No tmux sessions found")
+            send_telegram_message(f"[-] No tmux sessions are running")
+            return
+
+        active_sessions = [s for s in result.stdout.strip().split('\n') if s]
+
+        if session_name not in active_sessions:
+            logger.warning(f"Tmux session not found: {session_name}")
+            sessions_list = ', '.join(active_sessions) if active_sessions else 'none'
+            send_telegram_message(f"[-] Session <b>{session_name}</b> not found\n\nActive sessions: {sessions_list}")
+            return
+
+        # Send message to tmux session
+        formatted_message = f"[FROM USER via Telegram] {response}"
+
+        subprocess.run(
+            ['tmux', 'send-keys', '-t', session_name, formatted_message],
+            check=False
+        )
+
+        time.sleep(1)
+
+        subprocess.run(
+            ['tmux', 'send-keys', '-t', session_name, 'C-m'],
+            check=False
+        )
+
+        logger.info(f"✓ Message delivered to tmux session: {session_name}")
+        logger.info(f"✓ Content: {response}")
+
+        # Send confirmation
+        send_telegram_message(f"[+] Message delivered to <b>{session_name}</b>")
+
+    except Exception as e:
+        logger.error(f"Failed to send message: {e}")
+        send_telegram_message(f"[-] Error: {str(e)}")
 
 
 def main():
