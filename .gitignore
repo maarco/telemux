@@ -5,6 +5,13 @@
 *telegram_config*
 *.token
 *.secret
+.env
+.env.local
+
+# Documentation that may contain sensitive info
+CODEBASE_MAP.md
+CODEBASE_MAP_INDEX.md
+CODEBASE_MAP_QUICK_REF.txt
 
 # State and logs
 *.log

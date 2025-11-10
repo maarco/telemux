@@ -16,6 +16,43 @@ TeleMux is a **bidirectional messaging bridge** between Telegram and tmux sessio
 
 ---
 
+## Documentation & Code Style Guide
+
+**For AI Assistants & Contributors:**
+
+### Emoji Policy
+
+**DO NOT use emojis** in:
+- New code development
+- Documentation prose
+- Comments or docstrings
+- User-facing messages (new features)
+- Code examples (unless documenting existing behavior)
+
+**Emojis shown in this document** are:
+- Examples of existing Telegram message output
+- Part of the current system behavior (legacy)
+- Documented for accuracy, not as a pattern to follow
+
+**When documenting existing output:**
+```bash
+# Acceptable: Showing what the system currently outputs
+tg_alert "Build complete!"
+# Output: 🔔 Build complete!  (current system behavior)
+
+# Future development: Avoid adding new emojis
+# Prefer: [ALERT] Build complete!
+```
+
+### Writing Style
+
+- Clear, technical prose
+- No unnecessary embellishments
+- Code examples should be functional and accurate
+- Focus on architecture and data flow
+
+---
+
 ## System Architecture
 
 ```
