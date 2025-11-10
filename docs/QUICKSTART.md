@@ -17,35 +17,29 @@ Get up and running in 5 minutes!
    - Username: `your_bot_name_bot` (must end in 'bot')
 4. **Copy the token** - looks like: `1234567890:ABCdefGHIjklMNOpqrsTUVwxyz`
 
-## Step 2: Get Your Chat ID (1 minute)
+## Step 2: Send a Message to Your Bot (30 seconds)
 
 ### Option A: Group Chat (Recommended)
-```bash
-# 1. Create a group in Telegram and add your bot
-# 2. Send any message to the group
-# 3. Run this:
-curl "https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates" | jq '.'
-
-# 4. Look for: "chat":{"id": -1234567890}
-# (negative number = group chat)
-```
+1. Create a group in Telegram and add your bot
+2. Send any message to the group
 
 ### Option B: Private DM
-```bash
-# 1. Message your bot directly (any message)
-# 2. Run the same curl command
-# 3. Look for: "chat":{"id": 1234567890}
-# (positive number = personal chat)
-```
+1. Message your bot directly (any message)
 
 ## Step 3: Install (1 minute)
 
 ```bash
 cd ~/dev/telemux
 ./INSTALL.sh
-
-# Enter your bot token and chat ID when prompted
 ```
+
+The installer will:
+- Ask for your bot token
+- **Automatically fetch your available chats**
+- Display chat IDs, types, and names for easy selection
+- Test the connection with a message
+
+No more manual curl commands needed!
 
 ## Step 4: Start & Test (1 minute)
 
