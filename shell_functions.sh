@@ -74,7 +74,18 @@ ${message}
 # Alert when command completes
 tg_done() {
     local exit_code=$?
-    local cmd="${history[$((HISTCMD-1))]}"
+    local cmd
+
+    # Bash-compatible history access
+    if [ -n "$BASH_VERSION" ]; then
+        cmd="$(fc -ln -1 2>/dev/null || echo 'unknown command')"
+    else
+        # zsh
+        cmd="${history[$((HISTCMD-1))]}"
+    fi
+
+    # Trim leading/trailing whitespace
+    cmd="$(echo "$cmd" | xargs)"
 
     if [[ $exit_code -eq 0 ]]; then
         tg_alert "[+] Command completed: ${cmd}"

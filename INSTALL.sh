@@ -3,6 +3,10 @@
 
 set -e
 
+# Script directory and installation directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TELEMUX_DIR="$HOME/.telemux"
+
 echo "================================"
 echo "TeleMux Installation"
 echo "================================"
@@ -27,7 +31,6 @@ echo "✅ All prerequisites met"
 echo ""
 
 # Install Python dependencies
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/requirements.txt" ] && command -v pip3 >/dev/null 2>&1; then
     echo "Installing Python dependencies..."
     if pip3 install -r "$SCRIPT_DIR/requirements.txt" --quiet; then
@@ -68,7 +71,6 @@ echo ""
 
 # Install files
 echo "Installing files..."
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 cp "$SCRIPT_DIR/telegram_listener.py" ~/.telemux/
 chmod +x ~/.telemux/telegram_listener.py
@@ -91,9 +93,10 @@ if [ -n "$ZSH_VERSION" ]; then
 elif [ -n "$BASH_VERSION" ]; then
     SHELL_RC="$HOME/.bashrc"
 else
-    echo "⚠️  Could not detect shell. Please manually add functions to your rc file."
-    echo "    See README.md for shell function code."
-    exit 0
+    echo "❌ Could not detect shell (bash/zsh). Unsupported shell."
+    echo "   Please manually add functions to your rc file."
+    echo "   See README.md for shell function code."
+    exit 1
 fi
 
 # Check if already installed

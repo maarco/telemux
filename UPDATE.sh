@@ -4,6 +4,10 @@
 
 set -e
 
+# Script directory and installation directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TELEMUX_DIR="$HOME/.telemux"
+
 echo "================================"
 echo "TeleMux Update"
 echo "================================"

