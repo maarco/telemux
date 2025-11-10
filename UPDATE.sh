@@ -133,6 +133,68 @@ alias tg-doctor="$HOME/.telemux/telegram_control.sh doctor"
 fi
 
 echo ""
+echo "=== Updating Shell Functions ==="
+echo ""
+
+# Always copy latest shell_functions.sh to ~/.telemux/
+if [ -f "$SCRIPT_DIR/shell_functions.sh" ]; then
+    echo "Updating shell functions..."
+    cp "$SCRIPT_DIR/shell_functions.sh" "$TELEMUX_DIR/"
+    chmod +x "$TELEMUX_DIR/shell_functions.sh"
+    echo "✅ Shell functions updated in ~/.telemux/"
+
+    # Check if user is using old embedded functions or new sourced version
+    if grep -q "^tg_alert()" "$SHELL_RC" 2>/dev/null; then
+        echo ""
+        echo "⚠️  Detected old embedded functions in $SHELL_RC"
+        echo "   New version uses sourced functions from ~/.telemux/shell_functions.sh"
+        echo ""
+        echo "   Benefits of migrating:"
+        echo "   - Single source of truth (DRY principle)"
+        echo "   - Easier updates (just copy new file)"
+        echo "   - Cleaner shell configuration"
+        echo ""
+        read -p "Migrate to sourced functions? (y/n): " -n 1 -r
+        echo
+
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo "Backing up $SHELL_RC to ${SHELL_RC}.backup-$(date +%Y%m%d-%H%M%S)"
+            cp "$SHELL_RC" "${SHELL_RC}.backup-$(date +%Y%m%d-%H%M%S)"
+
+            # Remove old embedded functions (from # TELEGRAM NOTIFICATIONS to the end of that block)
+            # This is safer than trying to remove exact line ranges
+            echo "Removing old embedded functions..."
+            sed -i.tmp '/# TELEGRAM NOTIFICATIONS/,/^$/d' "$SHELL_RC"
+
+            # Add new sourced version
+            cat >> "$SHELL_RC" << 'SHELL_FUNCTIONS'
+
+# =============================================================================
+# TELEGRAM NOTIFICATIONS (TeleMux)
+# =============================================================================
+# Source TeleMux shell functions (single source of truth)
+if [[ -f "$HOME/.telemux/shell_functions.sh" ]]; then
+    source "$HOME/.telemux/shell_functions.sh"
+fi
+
+SHELL_FUNCTIONS
+
+            rm -f "${SHELL_RC}.tmp"
+            echo "✅ Migrated to sourced shell functions"
+            echo "   Reload: source $SHELL_RC"
+        else
+            echo "Skipped migration. Functions in ~/.telemux/shell_functions.sh are still updated."
+            echo "   You can manually source them: source ~/.telemux/shell_functions.sh"
+        fi
+    else
+        echo "✅ Already using sourced functions (no migration needed)"
+    fi
+else
+    echo "⚠️  shell_functions.sh not found in $SCRIPT_DIR"
+    echo "   This might be an old version of the repo. Functions not updated."
+fi
+
+echo ""
 echo "=== Python Dependencies ==="
 echo ""
 
