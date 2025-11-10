@@ -103,8 +103,8 @@ The installer already tested your setup, so the listener should start successful
 ### 5. Test It
 
 ```bash
-# Test simple alert
-tg_alert "Hello from terminal!"
+# Test from current session
+tg_agent "test-agent" "Hello from terminal!"
 
 # Test bidirectional from a tmux session
 tmux new-session -d -s test-session
@@ -119,23 +119,16 @@ tmux capture-pane -t test-session -p | tail -10
 
 ## Usage
 
-### Simple One-Way Alerts
+### Sending Messages from Agents
 
 ```bash
-# Send notification
-tg_alert "Build completed successfully!"
+# Send message from an agent (recommended)
+tg_agent "build-agent" "Build completed successfully!"
 
 # After long-running command
 npm run build && tg_done
 
-# With custom message
-tg_alert "Database backup finished: 5.2GB"
-```
-
-### Bidirectional Agent Messages
-
-```bash
-# LLM CLI or agent asks question
+# Agent asking for approval
 tg_agent "deployment-agent" "Ready to deploy to production?"
 
 # You reply in Telegram:
@@ -374,12 +367,12 @@ done
 "
 
 if [ $? -eq 0 ]; then
-    echo "✅ Deployment approved!"
+    echo "Deployment approved!"
     ./deploy-to-production.sh
-    tg_alert "✅ Deployment complete: $VERSION"
+    tg_agent "deploy-script" "Deployment complete: $VERSION"
 else
-    echo "❌ Deployment cancelled or timed out"
-    tg_alert "❌ Deployment cancelled: $VERSION"
+    echo "Deployment cancelled or timed out"
+    tg_agent "deploy-script" "Deployment cancelled: $VERSION"
     exit 1
 fi
 ```
@@ -392,15 +385,15 @@ fi
 
 START_TIME=$(date +%s)
 
-tg_alert "🔨 Starting build..."
+tg_agent "build-script" "Starting build..."
 
 # Run build
 if npm run build; then
     END_TIME=$(date +%s)
     DURATION=$((END_TIME - START_TIME))
-    tg_alert "✅ Build completed in ${DURATION}s"
+    tg_agent "build-script" "Build completed in ${DURATION}s"
 else
-    tg_alert "❌ Build failed! Check logs."
+    tg_agent "build-script" "Build failed! Check logs."
     exit 1
 fi
 ```
@@ -472,7 +465,7 @@ A: Yes! Each tmux session has a unique name, so multiple agents can send/receive
 A: Messages are saved in the agent's inbox file. The agent can check it later or timeout.
 
 **Q: Can I use this outside tmux?**
-A: `tg_alert()` works anywhere. `tg_agent()` requires tmux for bidirectional replies.
+A: `tg_agent()` works anywhere. Bidirectional replies require the session to be in tmux so the listener can deliver responses back to it.
 
 **Q: Does the listener survive reboots?**
 A: No, you need to run `tg-start` after reboot. Consider adding to startup scripts.

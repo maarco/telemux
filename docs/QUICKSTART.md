@@ -63,7 +63,7 @@ source ~/.zshrc  # or ~/.bashrc
 tg-start
 
 # Test it!
-tg_alert "Hello from my terminal!"
+tg_agent "test-agent" "Hello from my terminal!"
 ```
 
 **Check Telegram** - you should see the message!
@@ -115,12 +115,11 @@ source ~/.zshrc  # or source ~/.bashrc
 ## Quick Commands
 
 ```bash
-tg_alert "message"           # Simple alert
-tg_agent "name" "msg"        # Bidirectional
+tg_agent "name" "msg"        # Send message from agent
 tg_done                      # After commands
-tg-status                          # Check listener
-tg-logs                            # View logs
-tg-restart                         # Restart listener
+tg-status                    # Check listener
+tg-logs                      # View logs
+tg-restart                   # Restart listener
 ```
 
 ---
