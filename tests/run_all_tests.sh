@@ -49,10 +49,10 @@ echo ""
 cd "$TEST_DIR"
 
 if python3 test_telegram_listener.py; then
-    echo -e "${GREEN}✓ Python unit tests PASSED${NC}"
+    echo -e "${GREEN}Python unit tests PASSED${NC}"
     PYTHON_RESULT="PASS"
 else
-    echo -e "${RED}✗ Python unit tests FAILED${NC}"
+    echo -e "${RED}Python unit tests FAILED${NC}"
     PYTHON_RESULT="FAIL"
     SUITE_FAILED=1
 fi
@@ -67,10 +67,10 @@ echo "======================================================================"
 echo ""
 
 if bash test_integration.sh; then
-    echo -e "${GREEN}✓ Shell integration tests PASSED${NC}"
+    echo -e "${GREEN}Shell integration tests PASSED${NC}"
     SHELL_RESULT="PASS"
 else
-    echo -e "${RED}✗ Shell integration tests FAILED${NC}"
+    echo -e "${RED}Shell integration tests FAILED${NC}"
     SHELL_RESULT="FAIL"
     SUITE_FAILED=1
 fi
@@ -92,9 +92,9 @@ if [ $SUITE_FAILED -eq 0 ]; then
     echo -e "${GREEN}║  ALL TESTS PASSED - READY TO DEPLOY ║${NC}"
     echo -e "${GREEN}╚══════════════════════════════════════╝${NC}"
     echo ""
-    echo "✓ New routing logic is working correctly"
-    echo "✓ Backward compatibility maintained"
-    echo "✓ Edge cases handled properly"
+    echo "New routing logic is working correctly"
+    echo "Backward compatibility maintained"
+    echo "Edge cases handled properly"
     echo ""
     exit 0
 else
@@ -103,7 +103,7 @@ else
     echo -e "${RED}╚═══════════════════════════════════╝${NC}"
     echo ""
     echo -e "${YELLOW}TDD Process:${NC}"
-    echo "  1. ✓ Tests written (RED phase)"
+    echo "  1. Tests written (RED phase)"
     echo "  2. → Implement new routing logic"
     echo "  3. → Run tests again (GREEN phase)"
     echo "  4. → Refactor if needed"

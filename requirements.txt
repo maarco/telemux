@@ -1,5 +1,0 @@
-# TeleMux Python Dependencies
-# Install with: pip3 install -r requirements.txt
-
-# HTTP library for Telegram API calls
-requests>=2.25.0,<3.0.0

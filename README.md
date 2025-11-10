@@ -1,487 +1,440 @@
-# TeleMux: Bidirectional Telegram Bridge for Any LLM CLI
+# TeleMux
 
-> Universal Telegram integration for LLM CLIs (Claude Code, Codex, Gemini-CLI, etc.) and AI agents running in tmux - send messages to your phone and receive replies back in real-time
-
-TeleMux enables **true bidirectional communication** between your AI agents running in tmux and you via Telegram. Agents can ask questions, request approvals, or send alerts to your phone, and you can reply directly - your responses are delivered back to the agent's tmux session in real-time.
+**Bidirectional Telegram integration for tmux sessions** - Monitor commands, interact with agents, and stay connected to your terminal from anywhere.
 
 ## Features
 
-✅ **Simple Alerts** - Send one-way notifications from terminal
-✅ **Bidirectional Messaging** - Agents can send messages and receive replies
-✅ **Direct Delivery** - Replies appear in agent's tmux session via `send-keys`
-✅ **Clean Format** - Use tmux session name as message ID
-✅ **Persistent Listener** - Runs 24/7 in background tmux session
-✅ **Message Queue** - All messages logged for audit trail
+- **One-way notifications**: Send alerts to Telegram when commands complete
+- **Bidirectional communication**: Interact with tmux sessions via Telegram
+- **Agent support**: Create interactive agents that can receive replies
+- **Session routing**: Messages automatically delivered to the correct tmux session
+- **Daemon-based**: Runs as a background service in tmux
+- **Shell integration**: Simple shell functions for easy use
+- **Secure**: Configuration files are automatically protected (chmod 600)
 
-## Architecture
+## Installation
 
+### Via pip (Recommended)
+
+```bash
+# Install the package
+pip install telemux
+
+# Run the interactive installer
+telemux install
+
+# Start the listener daemon
+telemux start
 ```
-┌─────────────────┐         ┌──────────────┐         ┌──────────────┐
-│  Agent (tmux)   │────────▶│   Telegram   │────────▶│  Your Phone  │
-│                 │         │     Bot      │         │              │
-└─────────────────┘         └──────────────┘         └──────────────┘
-        ▲                          │                         │
-        │                          │                         │
-        │                   ┌──────▼──────┐                  │
-        └───────────────────│  Listener   │◀─────────────────┘
-                            │  Daemon     │
-                            └─────────────┘
-```
 
-**Flow:**
-1. LLM CLI or agent sends message to Telegram with session name as ID
-2. You receive notification on your phone/desktop
-3. You reply: `session-name: your message`
-4. Listener catches reply, parses session ID
-5. Delivers message to tmux session via `send-keys`
-6. Message appears in your Claude Code/agent session
+### From source
+
+```bash
+# Clone the repository
+git clone https://github.com/malmazan/telemux.git
+cd telemux
+
+# Install in development mode
+pip install -e .
+
+# Run the installer
+telemux install
+```
 
 ## Quick Start
 
-> **Updating?** If you already have TeleMux installed, run `./UPDATE.sh` instead to upgrade to the latest version.
+### 1. Create a Telegram Bot
 
-### Prerequisites
+1. Open Telegram and search for [@BotFather](https://t.me/BotFather)
+2. Send `/newbot` and follow the prompts
+3. Save the bot token provided
 
-- Telegram account
-- tmux installed
-- Python 3.6+
-- curl
-
-### 1. Create Telegram Bot
-
-1. Open Telegram and message [@BotFather](https://t.me/BotFather)
-2. Send `/newbot`
-3. Follow prompts to create bot
-4. Save your **bot token** (looks like: `1234567890:ABCdefGHIjklMNOpqrsTUVwxyz`)
-
-### 2. Configure Bot Permissions (IMPORTANT)
-
-**For Group Chats (Recommended):**
-
-1. **Turn off Privacy Mode** (required for groups):
-   - Message [@BotFather](https://t.me/BotFather)
-   - Send `/mybots`
-   - Select your bot
-   - Click "Bot Settings" → "Group Privacy" → "Turn off"
-   - This allows the bot to read all messages in groups
-
-2. **Create group and add bot:**
-   - Create a new Telegram group
-   - Add your bot to the group
-   - **Send a test message** (e.g., "hello") - this is required for the installer to detect the chat
-
-**For Private DM:**
-1. Message your bot directly
-2. **Send any message** (e.g., "hello") - this is required for the installer to detect the chat
-
-> **Why send a message?** The installer fetches available chats from Telegram. Your chat will only appear if you've sent at least one message to the bot first.
-
-### 3. Run the Installer
+### 2. Install TeleMux
 
 ```bash
-cd telemux
-./INSTALL.sh
+# Install via pip
+pip install telemux
+
+# Run the interactive installer
+telemux install
 ```
 
 The installer will:
-1. Check prerequisites (tmux, Python, curl)
-2. Install Python dependencies
-3. Ask for your bot token
-4. **Automatically fetch and display your available chats** with IDs
-5. Let you select a chat ID from the list
-6. Set up config files and shell integration
-7. Send a test message to verify everything works
+- Check prerequisites (tmux, python3, curl)
+- Validate your bot token
+- Auto-detect available chats (with retry logic)
+- Create configuration files
+- Install shell functions
+- Test the connection
 
-### 4. Start Listener
+### 3. Start the Listener
 
 ```bash
-tg-start
+# Start the daemon
+telemux start
+
+# Check status
+telemux status
+
+# View logs
+telemux logs
 ```
 
-The installer already tested your setup, so the listener should start successfully.
-
-### 5. Test It
+### 4. Use Shell Functions
 
 ```bash
-# Test from current session
-tg_agent "test-agent" "Hello from terminal!"
+# Send a simple notification
+tg_alert "Build complete!"
 
-# Test bidirectional from a tmux session
-tmux new-session -d -s test-session
-tmux send-keys -t test-session "tg_agent 'test-agent' 'Can you hear me?'" C-m
+# Send a message and receive replies (auto-detects tmux session name)
+tg_agent "Ready to deploy to production?"
+# Reply via Telegram: "session-name: yes"
+# The reply appears directly in your terminal
 
-# In Telegram, reply with:
-# test-session: Yes I can hear you!
-
-# Check if message was delivered
-tmux capture-pane -t test-session -p | tail -10
-```
-
-## Usage
-
-### Sending Messages from Agents
-
-```bash
-# Send message from an agent (recommended)
-tg_agent "build-agent" "Build completed successfully!"
-
-# After long-running command
+# Get notified when a command completes
 npm run build && tg_done
-
-# Agent asking for approval
-tg_agent "deployment-agent" "Ready to deploy to production?"
-
-# You reply in Telegram:
-# deployment-session: yes, deploy now
-
-# Message appears in your tmux session:
-# [FROM USER via Telegram] yes, deploy now
 ```
 
-### Message Format
+## Commands
 
-**Outgoing (Agent → Telegram):**
-```
-🤖 [agent-name:session-name]
-
-Your message here
-
-Reply with: session-name: your response
-```
-
-**Incoming (Telegram → Agent):**
-```
-session-name: your message content
-```
-
-**Delivered (in tmux):**
-```
-[FROM USER via Telegram] your message content
-```
-
-## Control Commands
+### Control Commands
 
 ```bash
-tg-start      # Start the listener daemon
-tg-stop       # Stop the listener daemon
-tg-restart    # Restart the listener daemon
-tg-status     # Check if listener is running
-tg-logs       # Tail the listener logs
-tg-attach     # Attach to the listener session
-tg-cleanup    # Rotate and clean up log files
-tg-doctor     # Run health check and diagnostics
+telemux start       # Start the listener daemon
+telemux stop        # Stop the listener daemon
+telemux restart     # Restart the listener daemon
+telemux status      # Check daemon status
+telemux logs        # View listener logs (tail -f)
+telemux attach      # Attach to the listener tmux session
+telemux cleanup     # Rotate and clean up log files
+telemux doctor      # Run health check and diagnose issues
+telemux install     # Run interactive installer
 ```
 
-## File Locations
+### Shortcuts
 
-```
-~/.telemux/telegram_config                      # Bot credentials (chmod 600)
-~/.telemux/telegram_listener.py                 # Listener daemon
-~/.telemux/telegram_control.sh                  # Control script
-~/.telemux/telegram_listener.log                # Listener logs
-~/.telemux/message_queue/outgoing.log           # Sent messages
-~/.telemux/message_queue/incoming.log           # Received replies
-~/.telemux/message_queue/listener_state.json   # Listener state
-~/.telemux/agents/{agent-name}/inbox.txt       # Agent inbox files
-```
-
-## Advanced Usage
-
-### Custom Agent Scripts
+For convenience, all commands have `tg-` shortcuts:
 
 ```bash
-#!/bin/bash
-# deployment-agent.sh
-
-# Send request to User
-MSG_ID=$(tg_agent "deployment-agent" "Deploy version $VERSION to production?")
-
-# Wait for reply (check inbox)
-INBOX="$HOME/.telemux/agents/deployment-agent/inbox.txt"
-while true; do
-    if grep -q "yes\|approved" "$INBOX" 2>/dev/null; then
-        echo "✅ Deployment approved!"
-        ./deploy.sh
-        break
-    elif grep -q "no\|reject" "$INBOX" 2>/dev/null; then
-        echo "❌ Deployment cancelled"
-        exit 1
-    fi
-    sleep 5
-done
+tg-start    # Same as: telemux start
+tg-stop     # Same as: telemux stop
+tg-status   # Same as: telemux status
+tg-logs     # Same as: telemux logs
 ```
 
-### Integration with AI Agents
+## Shell Functions
 
-```python
-# agent.py
-import subprocess
-import os
+After installation, these functions are available in your shell:
 
-def ask_user_telegram(question):
-    """Ask user a question via Telegram"""
-    result = subprocess.run(
-        ['bash', '-c', f'source ~/.zshrc && tg_agent "ai-agent" "{question}"'],
-        capture_output=True,
-        text=True
-    )
-    return result.stdout.strip()
+### `tg_alert`
 
-def get_user_reply():
-    """Check inbox for user's reply"""
-    inbox = os.path.expanduser("~/.telemux/agents/ai-agent/inbox.txt")
-    if os.path.exists(inbox):
-        with open(inbox) as f:
-            lines = f.readlines()
-            if lines:
-                # Get last message
-                for line in reversed(lines):
-                    if line.strip() and not line.startswith('['):
-                        return line.strip()
-    return None
+Send one-way notifications to Telegram:
 
-# Usage
-ask_user_telegram("Should I proceed with data migration?")
-# ... wait for reply or poll inbox ...
-reply = get_user_reply()
-if "yes" in reply.lower():
-    migrate_data()
+```bash
+tg_alert "Message text"
 ```
+
+**Examples:**
+
+```bash
+# Simple notification
+tg_alert "Server is ready"
+
+# Notify when command completes
+npm install && tg_alert "Dependencies installed"
+
+# Multiline messages
+tg_alert "Deploy complete
+- 50 files updated
+- 0 errors"
+```
+
+### `tg_agent`
+
+Send messages and receive replies via Telegram (automatically uses your tmux session name):
+
+```bash
+tg_agent "Message text"
+```
+
+**Examples:**
+
+```bash
+# Ask a question (inside a tmux session named "deploy")
+tg_agent "Ready to deploy to production?"
+
+# Wait for user response via Telegram
+# User replies: "deploy: yes, proceed"
+# Reply appears in your terminal
+
+# Use in scripts (inside a tmux session named "approval")
+tg_agent "Approve release v2.0?"
+# Returns the session name, user responds via Telegram
+# Check incoming message for approval
+```
+
+### `tg_done`
+
+Automatically notify when the previous command completes:
+
+```bash
+npm run build && tg_done
+```
+
+This sends a notification with:
+- Command that ran
+- Exit code (success/failure)
+- Timestamp
+
+## Bidirectional Communication
+
+TeleMux uses **session-based routing** for bidirectional communication:
+
+### Sending Messages from Terminal
+
+```bash
+# In tmux session named "deploy"
+tg_agent "Should I proceed with deployment?"
+```
+
+This sends a message to Telegram with instructions on how to reply. The session name is automatically detected.
+
+### Replying from Telegram
+
+Reply with the format: `session-name: your message`
+
+```
+deploy: yes, proceed with deployment
+```
+
+The reply is automatically routed to the correct tmux session and appears in your terminal.
+
+### Security
+
+- Messages are routed **only** to existing tmux sessions
+- User input is sanitized to prevent command injection
+- Session names are validated before routing
+- No session names are revealed in error messages
+
+## Configuration
+
+Configuration is stored in `~/.telemux/`:
+
+```
+~/.telemux/
+├── telegram_config          # Bot token and chat ID (chmod 600)
+├── telegram_listener.log    # Listener daemon logs
+├── telegram_errors.log      # Error logs
+├── message_queue/           # Message routing data
+│   ├── outgoing.log        # Sent messages
+│   ├── incoming.log        # Received messages
+│   └── archive/            # Rotated logs
+└── shell_functions.sh       # Shell integration functions
+```
+
+### Environment Variables
+
+You can override configuration with environment variables:
+
+```bash
+export TELEMUX_TG_BOT_TOKEN="your-bot-token"
+export TELEMUX_TG_CHAT_ID="your-chat-id"
+export TELEMUX_LOG_LEVEL="DEBUG"  # DEBUG, INFO, WARNING, ERROR
+```
+
+## Log Management
+
+Logs are automatically rotated when they exceed 10MB:
+
+```bash
+# Manual log rotation
+telemux cleanup
+
+# Install automatic monthly cleanup
+telemux cleanup --install-cron
+```
+
+Archives are stored in `~/.telemux/message_queue/archive/` and compressed with gzip.
 
 ## Troubleshooting
 
-### Bot not receiving messages in group
-
-**Solution:** Disable Privacy Mode
-1. Message @BotFather
-2. `/mybots` → Select bot → Bot Settings → Group Privacy → Turn off
-
-### Listener not starting
+### Run Health Check
 
 ```bash
-# Check logs
-cat ~/.telemux/telegram_listener.log
+telemux doctor
+```
+
+This checks:
+- Prerequisites (tmux, python3)
+- Configuration files
+- Telegram bot connection
+- Listener daemon status
+- Log files
+
+### Common Issues
+
+**Listener won't start:**
+```bash
+# Check if it's already running
+telemux status
+
+# View logs for errors
+telemux logs
+
+# Restart the listener
+telemux restart
+```
+
+**Messages not being received:**
+```bash
+# Check listener status
+telemux status
+
+# Verify configuration
+cat ~/.telemux/telegram_config
 
 # Test bot connection
-curl "https://api.telegram.org/bot<YOUR_TOKEN>/getMe"
-
-# Verify config
-source ~/.telemux/telegram_config
-echo $TELEMUX_TG_BOT_TOKEN
-echo $TELEMUX_TG_CHAT_ID
+telemux doctor
 ```
 
-### Messages not appearing in tmux
-
-**Check:**
-1. Is tmux session running? `tmux list-sessions`
-2. Does session name match message ID?
-3. Check listener logs: `tg-logs`
-
-### Permission denied errors
-
+**Shell functions not available:**
 ```bash
-chmod 600 ~/.telemux/telegram_config
-chmod +x ~/.telemux/telegram_listener.py
-chmod +x ~/.telemux/telegram_control.sh
+# Reload your shell configuration
+source ~/.zshrc  # or ~/.bashrc
+
+# Verify functions are sourced
+type tg_alert
 ```
-
-## Security Notes
-
-- **Config file:** `~/.telemux/telegram_config` is chmod 600 (owner read/write only)
-- **Bot token:** Never commit to git - add `*telegram_config*` to .gitignore
-- **Messages:** Logged locally in `~/.telemux/message_queue/`
-- **Telegram:** Messages sent via HTTPS to Telegram API
-
-## How It Works
-
-### Listener Daemon
-
-The Python daemon (`telegram_listener.py`) runs continuously:
-
-1. **Long polls** Telegram API every 30 seconds for updates
-2. **Parses** incoming messages for format: `session-name: message`
-3. **Looks up** agent details from `outgoing.log`
-4. **Writes** message to agent's inbox file
-5. **Delivers** to tmux session via `send-keys` if session is active
-6. **Confirms** delivery back to Telegram
-
-### Message Queue
-
-All messages are logged for audit trail:
-
-**outgoing.log:**
-```
-msg-id:agent-name:tmux-session:timestamp
-session-1:deploy-agent:deployment-session:2025-11-09T18:30:00
-```
-
-**incoming.log:**
-```
-msg-id:agent-name:timestamp:message-preview
-session-1:deploy-agent:2025-11-09T18:31:00:yes, approved
-```
-
-### State Management
-
-Listener maintains offset for processed updates in `listener_state.json`:
-```json
-{
-  "last_update_id": 453122730
-}
-```
-
-This ensures no messages are lost if listener restarts.
 
 ## Examples
 
-### Deploy Script with Approval
+### Long-Running Build Notification
 
 ```bash
 #!/bin/bash
-# deploy.sh - Requires User's approval via Telegram
+# Build script with notification
 
-VERSION="v2.1.0"
+echo "Starting build..."
+tg_alert "Build started for project-x"
 
-echo "🚀 Preparing deployment: $VERSION"
-
-# Ask for approval
-tg_agent "deploy-agent" "Deploy $VERSION to production? (yes/no)"
-
-# Wait for reply
-INBOX="$HOME/.telemux/agents/deploy-agent/inbox.txt"
-echo "⏳ Waiting for approval..."
-
-timeout 300 bash -c "
-while true; do
-    if [ -f '$INBOX' ]; then
-        REPLY=\$(tail -1 '$INBOX')
-        if echo \"\$REPLY\" | grep -qi 'yes'; then
-            exit 0
-        elif echo \"\$REPLY\" | grep -qi 'no'; then
-            exit 1
-        fi
-    fi
-    sleep 5
-done
-"
-
+npm run build
 if [ $? -eq 0 ]; then
-    echo "Deployment approved!"
-    ./deploy-to-production.sh
-    tg_agent "deploy-script" "Deployment complete: $VERSION"
+    tg_alert "Build succeeded!"
 else
-    echo "Deployment cancelled or timed out"
-    tg_agent "deploy-script" "Deployment cancelled: $VERSION"
-    exit 1
+    tg_alert "Build failed! Check logs."
 fi
 ```
 
-### Long-Running Build with Notification
+### Interactive Deployment Agent
 
 ```bash
 #!/bin/bash
-# build-and-notify.sh
+# Deployment with approval (run in tmux session named "deploy")
 
-START_TIME=$(date +%s)
+tg_agent "Ready to deploy v2.0 to production?"
 
-tg_agent "build-script" "Starting build..."
+# User responds via Telegram: "deploy: yes"
+# Response appears in terminal
 
-# Run build
-if npm run build; then
-    END_TIME=$(date +%s)
-    DURATION=$((END_TIME - START_TIME))
-    tg_agent "build-script" "Build completed in ${DURATION}s"
-else
-    tg_agent "build-script" "Build failed! Check logs."
-    exit 1
+read -p "Proceed with deployment? " response
+if [[ "$response" == *"yes"* ]]; then
+    ./deploy.sh
+    tg_alert "Deployment complete!"
 fi
 ```
 
-### AI Agent Asking for Guidance
+### Multi-Step Workflow
 
 ```bash
 #!/bin/bash
-# ai-agent.sh
+# Complex workflow with multiple checkpoints (run in tmux session named "migration")
 
-# Agent encounters uncertainty
-QUESTION="I found 3 duplicate entries in the database. Should I:
-1. Auto-merge them
-2. Flag for manual review
-3. Skip and continue"
+tg_alert "Starting migration workflow..."
 
-tg_agent "cleanup-agent" "$QUESTION"
+# Step 1: Backup
+tg_agent "Backup database before migration?"
+# Wait for approval...
 
-# Wait for response
-INBOX="$HOME/.telemux/agents/cleanup-agent/inbox.txt"
-while true; do
-    if [ -f "$INBOX" ]; then
-        REPLY=$(tail -5 "$INBOX" | grep -v "^\[" | tail -1)
+# Step 2: Migration
+./run-migration.sh && tg_done
 
-        if echo "$REPLY" | grep -qi "auto-merge\|option 1\|merge"; then
-            echo "✓ Auto-merging duplicates"
-            ./merge-duplicates.sh
-            break
-        elif echo "$REPLY" | grep -qi "manual\|option 2\|review"; then
-            echo "✓ Flagging for manual review"
-            ./flag-for-review.sh
-            break
-        elif echo "$REPLY" | grep -qi "skip\|option 3\|continue"; then
-            echo "✓ Skipping duplicates"
-            break
-        fi
-    fi
-    sleep 5
-done
+# Step 3: Verification
+tg_agent "Verify migration results?"
+# Wait for verification...
+
+tg_alert "Migration workflow complete!"
 ```
 
-## Documentation
+## Development
 
-### Core Documentation
-- **[Quick Start Guide](docs/QUICKSTART.md)** - 5-minute setup guide
-- **[ROADMAP.md](ROADMAP.md)** - Development roadmap and v1.0 progress
-- **[CHANGELOG.md](CHANGELOG.md)** - Version history and release notes
+### Running Tests
 
-### Developer Documentation
-- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute to TeleMux
-- **[Technical Documentation](docs/CLAUDE.md)** - Architecture and internal design for AI assistants
-- **[Compatible LLMs](docs/COMPATIBLE_LLMS.md)** - Supported LLM CLI tools
-- **[Security Audit](docs/SECURITY_AUDIT.md)** - Security checklist for v1.0 release
-- **[Test Suite](tests/README.md)** - Testing guide (56 passing tests)
+```bash
+# Install development dependencies
+pip install -e ".[dev]"
 
-### Scripts & Tools
-- `benchmark.sh` - Performance testing tool
-- `INSTALL.sh` - Automated installer
-- `UPDATE.sh` - Update existing installations
-- `UNINSTALL.sh` - Complete removal with backup
-- `MIGRATE.sh` - Migrate from legacy Team Mux
+# Run tests
+pytest
 
-## FAQ
+# Run with coverage
+pytest --cov=telemux --cov-report=term-missing
+```
 
-**Q: Can multiple agents use this simultaneously?**
-A: Yes! Each tmux session has a unique name, so multiple agents can send/receive independently.
+### Project Structure
 
-**Q: What happens if I don't reply?**
-A: Messages are saved in the agent's inbox file. The agent can check it later or timeout.
+```
+telemux/
+├── telemux/
+│   ├── __init__.py       # Package initialization
+│   ├── cli.py            # Main CLI entry point
+│   ├── control.py        # Daemon control (start, stop, status)
+│   ├── listener.py       # Telegram listener daemon
+│   ├── installer.py      # Interactive installer
+│   ├── cleanup.py        # Log rotation and cleanup
+│   ├── config.py         # Configuration management
+│   └── shell_functions.sh # Shell integration
+├── examples/             # Example scripts
+├── tests/               # Test suite
+├── pyproject.toml       # Package metadata and dependencies
+├── MANIFEST.in          # Package file manifest
+└── README.md            # This file
+```
 
-**Q: Can I use this outside tmux?**
-A: `tg_agent()` works anywhere. Bidirectional replies require the session to be in tmux so the listener can deliver responses back to it.
+## Requirements
 
-**Q: Does the listener survive reboots?**
-A: No, you need to run `tg-start` after reboot. Consider adding to startup scripts.
-
-**Q: Can I customize the message format?**
-A: Yes! Edit `telegram_listener.py` line 291 to change the `[FROM USER via Telegram]` prefix.
-
-## Credits
-
-Originally built for AI agent automation workflows.
-Open-sourced for the community to enable better human-AI agent collaboration.
+- Python 3.7+
+- tmux
+- curl
+- requests library (automatically installed)
 
 ## License
 
-MIT License - Use freely for personal or commercial projects.
+MIT License - see LICENSE file for details
 
----
+## Contributing
 
-**Need help?** Check logs: `tg-logs` or `cat ~/.telemux/telegram_listener.log`
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
+
+## Support
+
+- GitHub Issues: https://github.com/malmazan/telemux/issues
+- Documentation: https://github.com/malmazan/telemux
+
+## Credits
+
+Created by Marco Almazan
+
+## Related Projects
+
+- [tmux](https://github.com/tmux/tmux) - Terminal multiplexer
+- [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) - Telegram Bot API wrapper

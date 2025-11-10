@@ -56,11 +56,11 @@ print_test_header() {
 
 assert_success() {
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}  ✓ PASS${NC}"
+        echo -e "${GREEN}  PASS${NC}"
         TESTS_PASSED=$((TESTS_PASSED + 1))
         return 0
     else
-        echo -e "${RED}  ✗ FAIL: $1${NC}"
+        echo -e "${RED}  FAIL: $1${NC}"
         FAILED_TESTS+=("TEST $TEST_NUM: $1")
         TESTS_FAILED=$((TESTS_FAILED + 1))
         return 1
@@ -69,11 +69,11 @@ assert_success() {
 
 assert_failure() {
     if [ $? -ne 0 ]; then
-        echo -e "${GREEN}  ✓ PASS (expected failure)${NC}"
+        echo -e "${GREEN}  PASS (expected failure)${NC}"
         TESTS_PASSED=$((TESTS_PASSED + 1))
         return 0
     else
-        echo -e "${RED}  ✗ FAIL: $1 (should have failed)${NC}"
+        echo -e "${RED}  FAIL: $1 (should have failed)${NC}"
         FAILED_TESTS+=("TEST $TEST_NUM: $1")
         TESTS_FAILED=$((TESTS_FAILED + 1))
         return 1
@@ -82,11 +82,11 @@ assert_failure() {
 
 assert_contains() {
     if echo "$1" | grep -q "$2"; then
-        echo -e "${GREEN}  ✓ PASS: Found '$2'${NC}"
+        echo -e "${GREEN}  PASS: Found '$2'${NC}"
         TESTS_PASSED=$((TESTS_PASSED + 1))
         return 0
     else
-        echo -e "${RED}  ✗ FAIL: Expected to find '$2' in output${NC}"
+        echo -e "${RED}  FAIL: Expected to find '$2' in output${NC}"
         echo "  Output was: $1"
         FAILED_TESTS+=("TEST $TEST_NUM: Expected '$2'")
         TESTS_FAILED=$((TESTS_FAILED + 1))
@@ -96,12 +96,12 @@ assert_contains() {
 
 assert_not_contains() {
     if echo "$1" | grep -q "$2"; then
-        echo -e "${RED}  ✗ FAIL: Found '$2' (should not be present)${NC}"
+        echo -e "${RED}  FAIL: Found '$2' (should not be present)${NC}"
         FAILED_TESTS+=("TEST $TEST_NUM: Should not find '$2'")
         TESTS_FAILED=$((TESTS_FAILED + 1))
         return 1
     else
-        echo -e "${GREEN}  ✓ PASS: '$2' not found (as expected)${NC}"
+        echo -e "${GREEN}  PASS: '$2' not found (as expected)${NC}"
         TESTS_PASSED=$((TESTS_PASSED + 1))
         return 0
     fi
@@ -189,7 +189,7 @@ PROCESS_UPDATE=$(sed -n '/def process_update/,/^def /p' "$PROJECT_ROOT/telegram_
 
 # Should NOT contain lookup_agent() call in the main routing path
 # (it's OK if lookup_agent exists for backward compat, but routing shouldn't depend on it)
-echo "$PROCESS_UPDATE" | grep -q "lookup_agent" && echo "  Note: lookup_agent still called (may need removal)" || echo "  ✓ No lookup_agent dependency"
+echo "$PROCESS_UPDATE" | grep -q "lookup_agent" && echo "  Note: lookup_agent still called (may need removal)" || echo "  No lookup_agent dependency"
 
 # TEST 8: Verify 1-second sleep before Enter
 print_test_header "Message delivery includes 1-second sleep before Enter"
@@ -229,7 +229,7 @@ print_test_header "Check for DRY violations in shell functions"
 ALERT_COUNT=$(grep -c "^tg_alert()" ~/.zshrc "$PROJECT_ROOT/INSTALL.sh" "$PROJECT_ROOT/README.md" 2>/dev/null || echo "0")
 
 if [ "$ALERT_COUNT" -le 2 ]; then
-    echo -e "${GREEN}  ✓ Acceptable: tg_alert defined $ALERT_COUNT times${NC}"
+    echo -e "${GREEN}  Acceptable: tg_alert defined $ALERT_COUNT times${NC}"
     TESTS_PASSED=$((TESTS_PASSED + 1))
 else
     echo -e "${YELLOW}  ⚠ WARNING: tg_alert defined $ALERT_COUNT times (DRY violation)${NC}"
@@ -253,7 +253,7 @@ if [ $TESTS_FAILED -gt 0 ]; then
     echo ""
     echo "Failed tests:"
     for test in "${FAILED_TESTS[@]}"; do
-        echo -e "  ${RED}✗ $test${NC}"
+        echo -e "  ${RED}$test${NC}"
     done
     echo ""
     echo -e "${YELLOW}This is expected (TDD red phase).${NC}"

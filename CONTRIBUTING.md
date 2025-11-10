@@ -36,7 +36,7 @@ Enhancement suggestions are welcome! Please:
 
 1. **Fork and clone**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/telemux.git
+   git clone https://github.com/maarco/telemux.git
    cd telemux
    ```
 

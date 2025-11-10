@@ -114,7 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Audit trail for sent/received messages
 - **Clean API**
   - Session name as message ID (simple format)
-  - Formatted delivery: `[FROM USER via Telegram] message`
+  - Formatted delivery: `message`
   - Proper tmux injection with sleep + Enter
 - **Control Commands**
   - `tg-start` / `tg-stop` / `tg-restart`
