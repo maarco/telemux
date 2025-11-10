@@ -31,15 +31,43 @@ CHAT_ID = None
 
 # Logging setup
 LOG_FILE = TELEMUX_DIR / "telegram_listener.log"
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(LOG_FILE),
-        logging.StreamHandler()
-    ]
-)
+ERROR_LOG_FILE = TELEMUX_DIR / "telegram_errors.log"
+
+# Get log level from environment variable (default: INFO)
+LOG_LEVEL = os.environ.get('TELEMUX_LOG_LEVEL', 'INFO').upper()
+LOG_LEVEL_MAP = {
+    'DEBUG': logging.DEBUG,
+    'INFO': logging.INFO,
+    'WARNING': logging.WARNING,
+    'ERROR': logging.ERROR,
+    'CRITICAL': logging.CRITICAL
+}
+
+# Configure logging with multiple handlers
 logger = logging.getLogger('TelegramListener')
+logger.setLevel(LOG_LEVEL_MAP.get(LOG_LEVEL, logging.INFO))
+
+# Main log file handler (all levels)
+main_handler = logging.FileHandler(LOG_FILE)
+main_handler.setLevel(logging.DEBUG)
+main_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+main_handler.setFormatter(main_formatter)
+
+# Error log file handler (errors only)
+error_handler = logging.FileHandler(ERROR_LOG_FILE)
+error_handler.setLevel(logging.ERROR)
+error_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+error_handler.setFormatter(error_formatter)
+
+# Console handler (configurable level)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(LOG_LEVEL_MAP.get(LOG_LEVEL, logging.INFO))
+console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(console_formatter)
+
+logger.addHandler(main_handler)
+logger.addHandler(error_handler)
+logger.addHandler(console_handler)
 
 
 def load_telegram_config():
@@ -85,42 +113,95 @@ def save_state(state: Dict):
         json.dump(state, f, indent=2)
 
 
-def get_telegram_updates(offset: int = 0) -> List[Dict]:
-    """Poll Telegram for new messages"""
-    try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
-        params = {
-            "offset": offset,
-            "timeout": 30  # Long polling
-        }
-        response = requests.get(url, params=params, timeout=35)
-        response.raise_for_status()
-        data = response.json()
+def get_telegram_updates(offset: int = 0, max_retries: int = 3) -> List[Dict]:
+    """Poll Telegram for new messages with retry logic"""
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
+    params = {
+        "offset": offset,
+        "timeout": 30  # Long polling
+    }
 
-        if data.get("ok"):
-            return data.get("result", [])
-        return []
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url, params=params, timeout=35)
+            response.raise_for_status()
+            data = response.json()
 
-    except Exception as e:
-        logger.error(f"Failed to get Telegram updates: {e}")
-        return []
+            if data.get("ok"):
+                return data.get("result", [])
+            else:
+                logger.warning(f"Telegram API returned not ok: {data}")
+                return []
+
+        except requests.exceptions.Timeout:
+            # Timeout is expected with long polling, only log if it's a problem
+            if attempt < max_retries - 1:
+                logger.debug(f"Telegram long-poll timeout (attempt {attempt + 1}/{max_retries})")
+                time.sleep(2 ** attempt)
+            else:
+                logger.warning(f"Failed to get updates after {max_retries} timeout attempts")
+                return []
+
+        except requests.exceptions.ConnectionError as e:
+            logger.warning(f"Connection error (attempt {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)  # Exponential backoff
+            else:
+                logger.error(f"Failed to connect after {max_retries} attempts. Is the network down?")
+                return []
+
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Request error (attempt {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)
+            else:
+                logger.error(f"Failed to get updates after {max_retries} attempts: {e}")
+                return []
+
+        except Exception as e:
+            logger.error(f"Unexpected error getting Telegram updates: {e}")
+            return []
+
+    return []
 
 
-def send_telegram_message(text: str):
-    """Send a message to Telegram"""
-    try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-        payload = {
-            "chat_id": CHAT_ID,
-            "text": text,
-            "parse_mode": "HTML"
-        }
-        response = requests.post(url, json=payload)
-        response.raise_for_status()
-        logger.info(f"Sent message to Telegram: {text[:50]}...")
+def send_telegram_message(text: str, max_retries: int = 3):
+    """Send a message to Telegram with retry logic"""
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": CHAT_ID,
+        "text": text,
+        "parse_mode": "HTML"
+    }
 
-    except Exception as e:
-        logger.error(f"Failed to send Telegram message: {e}")
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(url, json=payload, timeout=10)
+            response.raise_for_status()
+            logger.info(f"Sent message to Telegram: {text[:50]}...")
+            return True
+
+        except requests.exceptions.Timeout:
+            logger.warning(f"Telegram API timeout (attempt {attempt + 1}/{max_retries})")
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)  # Exponential backoff: 1s, 2s, 4s
+            else:
+                logger.error(f"Failed to send message after {max_retries} attempts (timeout)")
+                return False
+
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Telegram API error (attempt {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)  # Exponential backoff
+            else:
+                logger.error(f"Failed to send message after {max_retries} attempts: {e}")
+                return False
+
+        except Exception as e:
+            logger.error(f"Unexpected error sending Telegram message: {e}")
+            return False
+
+    return False
 
 
 def parse_message_id(text: str) -> Optional[Tuple[str, str]]:
