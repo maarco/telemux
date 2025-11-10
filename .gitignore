@@ -1,0 +1,39 @@
+# Tele-Claude .gitignore
+
+# Never commit credentials!
+.telegram_config
+*telegram_config*
+*.token
+*.secret
+
+# State and logs
+*.log
+*.state
+message_queue/
+agents/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backup files
+*.bak
+*.backup
