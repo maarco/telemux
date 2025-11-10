@@ -95,27 +95,49 @@ if echo "$UPDATES_RESPONSE" | grep -q '"ok":true'; then
             echo "-----------------------------------------------------------"
         done < "$TEMP_CHATS"
 
-        rm -f "$TEMP_CHATS"
-
         echo ""
         echo "Note: Group chat IDs are negative, personal chat IDs are positive"
+        echo ""
+
+        # Check if exactly one chat found
+        UNIQUE_CHAT_COUNT=$(wc -l < "$TEMP_CHATS" | tr -d ' ')
+
+        if [ "$UNIQUE_CHAT_COUNT" -eq 1 ]; then
+            # Exactly one chat - offer to use it automatically
+            SINGLE_CHAT=$(head -1 "$TEMP_CHATS")
+            SINGLE_CHAT_ID=$(echo "$SINGLE_CHAT" | cut -d'|' -f1)
+            SINGLE_CHAT_NAME=$(echo "$SINGLE_CHAT" | cut -d'|' -f3)
+
+            echo "Found only one chat: $SINGLE_CHAT_NAME (ID: $SINGLE_CHAT_ID)"
+            read -p "Use this chat? (y/n): " -n 1 -r
+            echo
+
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                CHAT_ID="$SINGLE_CHAT_ID"
+                echo "Using chat ID: $CHAT_ID"
+            else
+                read -p "Enter your Chat ID manually: " CHAT_ID
+            fi
+        else
+            # Multiple chats - ask for manual input
+            read -p "Enter your Chat ID (from above): " CHAT_ID
+        fi
+
+        rm -f "$TEMP_CHATS"
     else
         echo "  No chats found. You need to:"
         echo "  1. Start a conversation with your bot (send any message)"
         echo "  2. Or add the bot to a group and send a message"
         echo "  3. Then run this installer again"
         echo ""
-        echo "  Or manually get your chat ID:"
-        echo "  curl \"https://api.telegram.org/bot${BOT_TOKEN}/getUpdates\" | jq '.'"
+        echo "  Or manually enter your chat ID if you know it:"
+        read -p "Enter your Chat ID (or press Ctrl+C to exit): " CHAT_ID
     fi
 else
     echo "❌ Invalid bot token. Please check and try again."
     echo "Response: $UPDATES_RESPONSE"
     exit 1
 fi
-
-echo ""
-read -p "Enter your Chat ID (from above or manual): " CHAT_ID
 
 # Create TeleMux directory
 echo "Creating ~/.telemux directory..."

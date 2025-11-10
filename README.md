@@ -54,27 +54,29 @@ TeleMux enables **true bidirectional communication** between your AI agents runn
 3. Follow prompts to create bot
 4. Save your **bot token** (looks like: `1234567890:ABCdefGHIjklMNOpqrsTUVwxyz`)
 
-### 2. Send a Message to Your Bot
+### 2. Configure Bot Permissions (IMPORTANT)
 
-**Option A: Group Chat (Recommended)**
-1. Create a new Telegram group
-2. Add your bot to the group
-3. Send any message to the group
+**For Group Chats (Recommended):**
 
-**Option B: Private DM**
-1. Message your bot directly (any message)
+1. **Turn off Privacy Mode** (required for groups):
+   - Message [@BotFather](https://t.me/BotFather)
+   - Send `/mybots`
+   - Select your bot
+   - Click "Bot Settings" → "Group Privacy" → "Turn off"
+   - This allows the bot to read all messages in groups
 
-### 3. Disable Privacy Mode (for groups only)
+2. **Create group and add bot:**
+   - Create a new Telegram group
+   - Add your bot to the group
+   - **Send a test message** (e.g., "hello") - this is required for the installer to detect the chat
 
-If using a group chat:
-1. Message [@BotFather](https://t.me/BotFather)
-2. Send `/mybots`
-3. Select your bot
-4. Click "Bot Settings" → "Group Privacy" → "Turn off"
+**For Private DM:**
+1. Message your bot directly
+2. **Send any message** (e.g., "hello") - this is required for the installer to detect the chat
 
-This allows the bot to see all group messages.
+> **Why send a message?** The installer fetches available chats from Telegram. Your chat will only appear if you've sent at least one message to the bot first.
 
-### 4. Run the Installer
+### 3. Run the Installer
 
 ```bash
 cd telemux
@@ -90,7 +92,7 @@ The installer will:
 6. Set up config files and shell integration
 7. Send a test message to verify everything works
 
-### 5. Start Listener
+### 4. Start Listener
 
 ```bash
 tg-start
@@ -98,7 +100,7 @@ tg-start
 
 The installer already tested your setup, so the listener should start successfully.
 
-### 6. Test It
+### 5. Test It
 
 ```bash
 # Test simple alert

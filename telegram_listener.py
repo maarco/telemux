@@ -288,7 +288,7 @@ Message ID: {message_id}
         if tmux_session in active_sessions:
             # Send the actual message content to tmux session
             # Format: [FROM USER via Telegram] actual message
-            formatted_message = f"[FROM USER via Telegram] {response}"
+            formatted_message = f"{response}"
 
             # Send the text first
             subprocess.run(
@@ -312,7 +312,7 @@ Message ID: {message_id}
         logger.error(f"Failed to send tmux notification: {e}")
 
     # Send confirmation to Telegram
-    send_telegram_message(f"✅ Response delivered to <b>{agent_name}</b> (ID: {message_id})")
+    send_telegram_message(f"✓ Response delivered to <b>{agent_name}</b> (ID: {message_id})")
 
 
 def process_update(update: Dict[str, Any]) -> None:
