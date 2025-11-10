@@ -1,94 +1,171 @@
 # Changelog
 
-## v1.0.0 - 2025-11-09
+All notable changes to TeleMux will be documented in this file.
 
-Initial release of TeleMux bidirectional Telegram bridge.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### Features
+## [Unreleased] - v1.0.0
 
-✅ **Simple Alerts**
-- `tg_alert()` - Send one-way notifications to Telegram
-- `tg_done()` - Alert when commands complete (with exit status)
+### Planned
+- Production testing completion (7+ days with 3+ users)
+- Performance benchmarking validation (1000+ messages)
+- Security audit execution
+- Public release announcement
 
-✅ **Bidirectional Messaging**
-- `tg_agent()` - Send messages from agents and receive replies
-- Message routing via tmux session names
-- Direct delivery to tmux sessions via `send-keys`
+## [0.9.1] - 2025-11-10
 
-✅ **Listener Daemon**
-- Python daemon with long-polling
-- Runs 24/7 in dedicated tmux session
-- Auto-recovery on restart
-- State management for message tracking
+### Added
+- **Comprehensive test suite** (56 passing tests)
+  - Unit tests for message parsing, agent lookup, state management
+  - Integration tests with mocked Telegram API
+  - Security tests for command injection prevention
+  - Test coverage >70% of critical paths
+- **Performance benchmarking tool** (`benchmark.sh`)
+  - Configurable message count and delays
+  - Success rate validation (95%+ threshold)
+  - Comprehensive logging and metrics
+- **Security audit checklist** (`SECURITY_AUDIT.md`)
+  - 50+ checks across 13 security categories
+  - Credential management validation
+  - Command injection prevention tests
+- **Documentation improvements**
+  - Organized docs into `docs/` folder
+  - Added emoji-free style guide
+  - Created `.env.example` template
+  - Fixed config path errors in README (9 instances)
+- **GitHub Actions CI/CD**
+  - Automated testing on push/PR
+  - Multi-version Python support (3.8-3.12)
+  - Code linting and shellcheck
+  - Coverage reporting
 
-✅ **Message Queue System**
-- Persistent logging of all messages
-- Inbox files for each agent
-- Audit trail for sent/received messages
+### Fixed
+- README.md config paths (`~/.telegram_config` → `~/.telemux/telegram_config`)
+- Shell function installation instructions now match INSTALL.sh
+- Missing v0.9.1 command aliases in documentation
 
-✅ **Clean API**
-- Session name as message ID (simple format)
-- Formatted delivery: `[FROM USER via Telegram] message`
-- Sleep + Enter for proper tmux injection
+### Changed
+- Simplified shell function installation (source from single file)
+- Cleaned up 7 development artifact files
 
-### Components
+## [0.9.0] - 2025-11-09
 
-- **telegram_listener.py** - Main listener daemon (Python 3.6+)
-- **telegram_control.sh** - Control script (start/stop/status/logs)
-- **Shell functions** - Integration for zsh/bash
-- **INSTALL.sh** - Automated installation script
+### Added
+- **Log rotation system** (`cleanup-logs.sh`)
+  - 10MB size limit with automatic archiving
+  - Archives to `message_queue/archive/YYYY-MM/`
+  - Auto-cleanup of archives older than 6 months
+  - Optional cron job installation
+  - New command: `tg-cleanup`
+- **Health check diagnostics** (`tg-doctor`)
+  - Validates tmux, Python, dependencies
+  - Checks config file format and permissions
+  - Tests bot connection
+  - Validates chat ID format
+  - Shows message queue statistics
+- **Enhanced error handling**
+  - Retry logic with exponential backoff (3 attempts)
+  - Separate timeout and connection error handling
+  - Better error messages for common failures
+  - Graceful degradation when Telegram unreachable
+  - Separate error log file (`telegram_errors.log`)
+- **Dependency management**
+  - Created `requirements.txt` with pinned versions
+  - Updated INSTALL.sh to check/install dependencies
+  - Python version detection
+  - Graceful handling when pip3 not available
+- **Enhanced logging**
+  - Configurable log levels (DEBUG/INFO/WARNING/ERROR)
+  - `TELEMUX_LOG_LEVEL` environment variable
+  - Separate error log file
+  - Multiple handlers with different levels
+- **Migration and uninstall tools**
+  - `MIGRATE.sh` - Migrate from legacy `.team_mux` paths
+  - `UNINSTALL.sh` - Complete removal with backup option
+  - `UPDATE.sh` - Upgrade existing installations
 
-### Documentation
+### Fixed
+- Documentation inconsistencies (function names, branding)
+- Path references (updated `.team_mux` → `.telemux`)
+- All TODOs resolved
 
-- **README.md** - Complete documentation (16KB)
-- **QUICKSTART.md** - 5-minute setup guide
-- **examples/** - Real-world usage examples
+### Changed
+- Environment variables: `TELEGRAM_*` → `TELEMUX_TG_*`
+- Project renamed from "Team Mux" to "TeleMux"
+- Moved from `~/.team_mux/` to `~/.telemux/`
 
-### Examples Included
+## [0.1.0] - 2025-11-09
 
-1. **deployment-approval.sh** - Request approval before deploys
-2. **long-build-notify.sh** - Notify on build start/completion
-3. **ai-agent-question.sh** - Agent asks for guidance
+### Added
+- Initial release of TeleMux bidirectional Telegram bridge
+- **Core Features**
+  - `tg_alert()` - Send one-way notifications to Telegram
+  - `tg_agent()` - Bidirectional agent messaging
+  - `tg_done()` - Alert when commands complete
+- **Listener Daemon**
+  - Python daemon with long-polling
+  - Runs 24/7 in dedicated tmux session
+  - Auto-recovery on restart
+  - State management for message tracking
+- **Message Queue System**
+  - Persistent logging of all messages
+  - Inbox files for each agent
+  - Audit trail for sent/received messages
+- **Clean API**
+  - Session name as message ID (simple format)
+  - Formatted delivery: `[FROM USER via Telegram] message`
+  - Proper tmux injection with sleep + Enter
+- **Control Commands**
+  - `tg-start` / `tg-stop` / `tg-restart`
+  - `tg-status` - Check listener status
+  - `tg-logs` - View logs
+  - `tg-attach` - Attach to listener session
+- **Components**
+  - `telegram_listener.py` - Main listener daemon
+  - `telegram_control.sh` - Control script
+  - `shell_functions.sh` - Shell integration
+  - `INSTALL.sh` - Automated installer
+- **Documentation**
+  - README.md - Complete user guide
+  - QUICKSTART.md - 5-minute setup
+  - CLAUDE.md - Technical documentation
+  - Example scripts (deployment, build, agent questions)
 
 ### Requirements
-
 - tmux
 - Python 3.6+
 - curl
 - Telegram bot (via @BotFather)
 
-### Installation
-
-```bash
-cd ~/dev/telemux
-./INSTALL.sh
-```
-
-See QUICKSTART.md for full setup guide.
-
 ---
 
-## Future Enhancements (Planned)
+## Future Enhancements
 
-🔮 **v1.1.0**
+### v1.1.0 (Planned)
 - Multiple chat support (group + personal DM)
 - Rich message formatting (markdown, buttons)
 - Message threading/conversations
 - Command shortcuts (/deploy, /status, etc.)
+- Fish shell support
+- Interactive setup wizard
 
-🔮 **v1.2.0**
+### v1.2.0 (Planned)
 - Web dashboard for message history
 - Agent status monitoring
 - Message analytics and insights
+- Performance optimizations
 
-🔮 **v2.0.0**
+### v2.0.0 (Planned - Multi-Platform)
+- WhatsApp integration (Twilio API)
+- Slack integration
+- Discord integration
 - Multi-user support
 - Permission system
 - Approval workflows
-- Integration with other platforms (Slack, Discord)
 
 ---
 
-**Built for:** AI Agent Automation & LLM CLI Integration
-**Project:** TeleMux - Bidirectional Telegram Bridge
+**Repository:** https://github.com/maarco/telemux
 **License:** MIT
+**Maintainer:** Marco (with Claude Code)
