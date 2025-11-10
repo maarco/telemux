@@ -54,22 +54,15 @@ TeleMux enables **true bidirectional communication** between your AI agents runn
 3. Follow prompts to create bot
 4. Save your **bot token** (looks like: `1234567890:ABCdefGHIjklMNOpqrsTUVwxyz`)
 
-### 2. Get Your Chat ID
+### 2. Send a Message to Your Bot
 
 **Option A: Group Chat (Recommended)**
 1. Create a new Telegram group
 2. Add your bot to the group
-3. Send a message to the group
-4. Run:
-   ```bash
-   curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates" | jq '.'
-   ```
-5. Look for `"chat":{"id": -1234567890}` (negative number for groups)
+3. Send any message to the group
 
 **Option B: Private DM**
 1. Message your bot directly (any message)
-2. Run the same curl command above
-3. Look for `"chat":{"id": 1234567890}` (positive number for DM)
 
 ### 3. Disable Privacy Mode (for groups only)
 
@@ -81,65 +74,29 @@ If using a group chat:
 
 This allows the bot to see all group messages.
 
-### 4. Install Files
+### 4. Run the Installer
 
 ```bash
-# Create config file
-cat > ~/.telemux/telegram_config << 'EOF'
-#!/bin/bash
-# TeleMux Telegram Bot Configuration
-# Keep this file secure! (chmod 600)
-
-export TELEMUX_TG_BOT_TOKEN="your-bot-token-here"
-export TELEMUX_TG_CHAT_ID="your-chat-id-here"  # Use negative number for groups
-EOF
-
-chmod 600 ~/.telemux/telegram_config
-
-# Install listener daemon
-cp telegram_listener.py ~/.telemux/
-chmod +x ~/.telemux/telegram_listener.py
-
-# Install control script
-cp telegram_control.sh ~/.telemux/
-chmod +x ~/.telemux/telegram_control.sh
-
-# Install shell functions
-cp shell_functions.sh ~/.telemux/
-chmod +x ~/.telemux/shell_functions.sh
-
-# Add shell integration to ~/.zshrc (or ~/.bashrc)
-cat >> ~/.zshrc << 'ZSHRC_EOF'
-
-# =============================================================================
-# TELEGRAM NOTIFICATIONS (TeleMux)
-# =============================================================================
-# Source TeleMux shell functions (single source of truth)
-if [[ -f "$HOME/.telemux/shell_functions.sh" ]]; then
-    source "$HOME/.telemux/shell_functions.sh"
-fi
-
-# Control aliases
-alias tg-start="$HOME/.telemux/telegram_control.sh start"
-alias tg-stop="$HOME/.telemux/telegram_control.sh stop"
-alias tg-restart="$HOME/.telemux/telegram_control.sh restart"
-alias tg-status="$HOME/.telemux/telegram_control.sh status"
-alias tg-logs="$HOME/.telemux/telegram_control.sh logs"
-alias tg-attach="$HOME/.telemux/telegram_control.sh attach"
-alias tg-cleanup="$HOME/.telemux/telegram_control.sh cleanup"
-alias tg-doctor="$HOME/.telemux/telegram_control.sh doctor"
-
-ZSHRC_EOF
-
-# Reload shell config
-source ~/.zshrc
+cd telemux
+./INSTALL.sh
 ```
+
+The installer will:
+1. Check prerequisites (tmux, Python, curl)
+2. Install Python dependencies
+3. Ask for your bot token
+4. **Automatically fetch and display your available chats** with IDs
+5. Let you select a chat ID from the list
+6. Set up config files and shell integration
+7. Send a test message to verify everything works
 
 ### 5. Start Listener
 
 ```bash
 tg-start
 ```
+
+The installer already tested your setup, so the listener should start successfully.
 
 ### 6. Test It
 
