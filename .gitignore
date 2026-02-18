@@ -28,6 +28,11 @@ __pycache__/
 venv/
 env/
 ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+*.egg-info/
 
 # macOS
 .DS_Store
