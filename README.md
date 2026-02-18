@@ -209,6 +209,15 @@ deploy: yes, proceed with deployment
 
 The reply is automatically routed to the correct tmux session and appears in your terminal.
 
+### Telegram Commands
+
+Send these commands directly to your Telegram bot:
+
+- `capture` - Capture and send back the last 100 lines of your active session
+- `capture on` - Enable auto-capture (waits 5 seconds after each message, then sends output)
+- `capture off` - Disable auto-capture
+- `capture status` - Check if auto-capture is enabled
+
 ### Security
 
 - Messages are routed **only** to existing tmux sessions
@@ -261,6 +270,7 @@ You can override configuration with environment variables:
 ```bash
 export TELEMUX_TG_BOT_TOKEN="your-bot-token"
 export TELEMUX_TG_CHAT_ID="your-chat-id"
+export TELEMUX_TG_USER_ID="your-user-id"  # Optional: restrict control to specific user
 export TELEMUX_LOG_LEVEL="DEBUG"  # DEBUG, INFO, WARNING, ERROR
 ```
 

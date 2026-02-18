@@ -5,6 +5,27 @@ All notable changes to TeleMux will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-02-18
+
+### Added
+- **Auto-capture mode** - Automatically capture session output after messages
+  - `capture` - Manual capture of last active session
+  - `capture on` - Enable auto-capture (waits 5s then sends output)
+  - `capture off` - Disable auto-capture
+  - `capture status` - Check auto-capture status
+- **User ID validation** - Optional security to restrict bot control to specific user
+- **Session name display** - Shows available sessions when target not found
+
+### Fixed
+- **Tmux socket routing** - Messages now correctly route to user's default tmux socket
+  - Added `tmux_user_cmd()` to separate listener socket from user sessions
+  - Clear TMUX env var to avoid inheriting listener's socket context
+- **Duplicate log entries** - Fixed handler duplication on module reload
+
+### Changed
+- Refactored to pip-installable Python package
+- Removed shell script installers in favor of `pip install telemux`
+
 ## [Unreleased] - v1.0.0
 
 ### Planned
