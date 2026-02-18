@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "telemux"
-version = "1.0.2"
+version = "1.0.9"
 description = "Bidirectional Telegram integration for tmux sessions - monitor commands and interact with agents"
 readme = "README.md"
 requires-python = ">=3.7"
 license = {text = "MIT"}
 authors = [
-    {name = "Marco Almazan", email = "marco@example.com"}
+    {name = "Marco Almazan", email = "almazan@gmail.com"}
 ]
 keywords = ["telegram", "tmux", "notifications", "monitoring", "agent", "automation"]
 classifiers = [
@@ -62,9 +62,9 @@ tg-status = "telemux.control:status"
 tg-logs = "telemux.control:logs"
 
 [project.urls]
-Homepage = "https://github.com/malmazan/telemux"
-Repository = "https://github.com/malmazan/telemux"
-Issues = "https://github.com/malmazan/telemux/issues"
+Homepage = "https://github.com/maarco/telemux"
+Repository = "https://github.com/maarco/telemux"
+Issues = "https://github.com/maarco/telemux/issues"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

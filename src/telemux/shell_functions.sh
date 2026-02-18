@@ -6,7 +6,7 @@
 # Source this file to get: tg_alert, tg_agent, tg_done
 #
 # Deployed to: ~/.telemux/shell_functions.sh
-# Sourced by: ~/.zshrc (via INSTALL.sh)
+# Sourced by: ~/.zshrc or ~/.bashrc (via telemux install)
 #
 
 # Load TeleMux configuration
@@ -112,6 +112,6 @@ alias tg-attach="telemux-attach"
 alias tg-cleanup="telemux-cleanup"
 alias tg-doctor="telemux-doctor"
 
-# Backward compatibility aliases (for users upgrading from old Team Mux)
-alias alert_telegram="tg_alert"
-alias agent_telegram="tg_agent"
+# I added these
+alias tg-alert="tg_alert"
+alias tg-msg="tg_agent"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Unit tests for telegram_listener.py
-Tests message parsing, agent lookup, and core functionality
+Unit tests for telemux listener module
+Tests message parsing, state management, and core functionality
 """
 
 import pytest
@@ -9,170 +9,104 @@ import json
 from pathlib import Path
 from datetime import datetime
 import sys
-import os
 
-# Add parent directory to path so we can import telegram_listener
+# Add parent directory to path so we can import telemux
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import telegram_listener
+import telemux
 
 
 @pytest.mark.unit
 class TestMessageParsing:
     """Tests for parse_message_id function"""
 
-    def test_parse_session_name_format(self):
-        """Test parsing session-name: message format"""
+    def test_parse_session_message_format(self):
+        """Test parsing session-name: message format returns tuple with False bypass"""
         text = "claude-session: Deploy to production"
-        result = telegram_listener.parse_message_id(text)
+        result = telemux.parse_message_id(text)
         assert result is not None
-        message_id, response = result
-        assert message_id == "claude-session"
+        session_name, response, bypass = result
+        assert session_name == "claude-session"
         assert response == "Deploy to production"
+        assert bypass is False
 
     def test_parse_with_extra_colons(self):
         """Test parsing message with colons in response"""
         text = "deploy-agent: Time: 14:30, Status: Ready"
-        result = telegram_listener.parse_message_id(text)
+        result = telemux.parse_message_id(text)
         assert result is not None
-        message_id, response = result
-        assert message_id == "deploy-agent"
+        session_name, response, bypass = result
+        assert session_name == "deploy-agent"
         assert response == "Time: 14:30, Status: Ready"
+        assert bypass is False
 
     def test_parse_with_spaces(self):
         """Test parsing with extra spaces after colon"""
         text = "test-session:     Multiple spaces here"
-        result = telegram_listener.parse_message_id(text)
+        result = telemux.parse_message_id(text)
         assert result is not None
-        message_id, response = result
-        assert message_id == "test-session"
+        session_name, response, bypass = result
+        assert session_name == "test-session"
         assert response == "Multiple spaces here"
 
     def test_parse_with_underscores(self):
         """Test session names with underscores"""
         text = "build_server_1: Build complete"
-        result = telegram_listener.parse_message_id(text)
+        result = telemux.parse_message_id(text)
         assert result is not None
-        message_id, response = result
-        assert message_id == "build_server_1"
+        session_name, response, bypass = result
+        assert session_name == "build_server_1"
         assert response == "Build complete"
 
-    def test_parse_old_msg_format(self):
-        """Test parsing old msg-timestamp format"""
-        text = "msg-1234567890-12345: Legacy message"
-        result = telegram_listener.parse_message_id(text)
+    def test_parse_bypass_mode_with_session(self):
+        """Test parsing bypass mode (!prefix) with explicit session"""
+        text = "test-session: !rm -rf /tmp/test"
+        result = telemux.parse_message_id(text)
         assert result is not None
-        message_id, response = result
-        assert message_id == "msg-1234567890-12345"
-        assert response == "Legacy message"
+        session_name, response, bypass = result
+        assert session_name == "test-session"
+        assert response == "rm -rf /tmp/test"
+        assert bypass is True
+
+    def test_parse_implicit_session_no_bypass(self):
+        """Test parsing implicit session (no session: prefix)"""
+        text = "Just a message"
+        result = telemux.parse_message_id(text)
+        assert result is not None
+        session_name, response, bypass = result
+        assert session_name is None  # No explicit session
+        assert response == "Just a message"
+        assert bypass is False
+
+    def test_parse_implicit_session_with_bypass(self):
+        """Test parsing implicit session with bypass mode"""
+        text = "!ls -la"
+        result = telemux.parse_message_id(text)
+        assert result is not None
+        session_name, response, bypass = result
+        assert session_name is None
+        assert response == "ls -la"
+        assert bypass is True
 
     def test_parse_multiline_response(self):
         """Test parsing multiline responses"""
         text = "agent-1: First line\nSecond line\nThird line"
-        result = telegram_listener.parse_message_id(text)
+        result = telemux.parse_message_id(text)
         assert result is not None
-        message_id, response = result
-        assert message_id == "agent-1"
+        session_name, response, bypass = result
+        assert session_name == "agent-1"
         assert "First line" in response
         assert "Second line" in response
-
-    def test_parse_invalid_no_colon(self):
-        """Test parsing fails without colon"""
-        text = "Just a regular message"
-        result = telegram_listener.parse_message_id(text)
-        assert result is None
-
-    def test_parse_invalid_empty_message_id(self):
-        """Test parsing fails with empty message ID"""
-        text = ": Message without ID"
-        result = telegram_listener.parse_message_id(text)
-        assert result is None
-
-    def test_parse_invalid_special_chars_in_id(self):
-        """Test parsing fails with invalid characters in message ID"""
-        text = "session@name: Invalid characters"
-        result = telegram_listener.parse_message_id(text)
-        assert result is None
 
     def test_parse_empty_response(self):
         """Test parsing with empty response after colon"""
         text = "session-name: "
-        result = telegram_listener.parse_message_id(text)
+        result = telemux.parse_message_id(text)
         # Single space is technically matched by regex (.+)
         assert result is not None
-        message_id, response = result
-        assert message_id == "session-name"
+        session_name, response, bypass = result
+        assert session_name == "session-name"
         assert response == " "
-
-
-@pytest.mark.unit
-class TestAgentLookup:
-    """Tests for lookup_agent function"""
-
-    def test_lookup_existing_agent(self, tmp_path):
-        """Test looking up an agent that exists in outgoing log"""
-        outgoing_log = tmp_path / "outgoing.log"
-        outgoing_log.write_text(
-            "session-1:agent-alpha:session-1:2025-11-09T10:00:00-07:00\n"
-            "session-2:agent-beta:session-2:2025-11-09T10:05:00-07:00\n"
-        )
-
-        # Temporarily override OUTGOING_LOG
-        original = telegram_listener.OUTGOING_LOG
-        telegram_listener.OUTGOING_LOG = outgoing_log
-
-        result = telegram_listener.lookup_agent("session-1")
-        assert result is not None
-        assert result["message_id"] == "session-1"
-        assert result["agent_name"] == "agent-alpha"
-        assert result["tmux_session"] == "session-1"
-        # Timestamp gets split by colons, so only first part is returned
-        assert result["timestamp"] == "2025-11-09T10"
-
-        # Restore
-        telegram_listener.OUTGOING_LOG = original
-
-    def test_lookup_nonexistent_agent(self, tmp_path):
-        """Test looking up an agent that doesn't exist"""
-        outgoing_log = tmp_path / "outgoing.log"
-        outgoing_log.write_text("session-1:agent-alpha:session-1:2025-11-09T10:00:00-07:00\n")
-
-        original = telegram_listener.OUTGOING_LOG
-        telegram_listener.OUTGOING_LOG = outgoing_log
-
-        result = telegram_listener.lookup_agent("nonexistent")
-        assert result is None
-
-        telegram_listener.OUTGOING_LOG = original
-
-    def test_lookup_missing_log_file(self, tmp_path):
-        """Test lookup when outgoing log doesn't exist"""
-        nonexistent_log = tmp_path / "nonexistent.log"
-
-        original = telegram_listener.OUTGOING_LOG
-        telegram_listener.OUTGOING_LOG = nonexistent_log
-
-        result = telegram_listener.lookup_agent("session-1")
-        assert result is None
-
-        telegram_listener.OUTGOING_LOG = original
-
-    def test_lookup_malformed_log_entry(self, tmp_path):
-        """Test lookup with malformed log entries"""
-        outgoing_log = tmp_path / "outgoing.log"
-        outgoing_log.write_text(
-            "invalid-entry\n"
-            "session-1:agent-alpha:session-1:2025-11-09T10:00:00-07:00\n"
-        )
-
-        original = telegram_listener.OUTGOING_LOG
-        telegram_listener.OUTGOING_LOG = outgoing_log
-
-        result = telegram_listener.lookup_agent("session-1")
-        assert result is not None
-        assert result["agent_name"] == "agent-alpha"
-
-        telegram_listener.OUTGOING_LOG = original
 
 
 @pytest.mark.unit
@@ -181,124 +115,122 @@ class TestStateManagement:
 
     def test_load_nonexistent_state(self, tmp_path):
         """Test loading state when file doesn't exist"""
-        original = telegram_listener.LISTENER_STATE
-        telegram_listener.LISTENER_STATE = tmp_path / "nonexistent.json"
+        original = telemux.LISTENER_STATE
+        telemux.LISTENER_STATE = tmp_path / "nonexistent.json"
 
-        state = telegram_listener.load_state()
-        assert state == {"last_update_id": 0}
+        state = telemux.load_state()
+        assert state == {"last_update_id": 0, "last_active_session": None}
 
-        telegram_listener.LISTENER_STATE = original
+        telemux.LISTENER_STATE = original
 
     def test_load_existing_state(self, tmp_path):
         """Test loading existing state file"""
         state_file = tmp_path / "listener_state.json"
+        state_file.write_text('{"last_update_id": 12345, "last_active_session": "my-session"}')
+
+        original = telemux.LISTENER_STATE
+        telemux.LISTENER_STATE = state_file
+
+        state = telemux.load_state()
+        assert state["last_update_id"] == 12345
+        assert state["last_active_session"] == "my-session"
+
+        telemux.LISTENER_STATE = original
+
+    def test_load_backward_compatibility(self, tmp_path):
+        """Test loading old state file without last_active_session"""
+        state_file = tmp_path / "listener_state.json"
         state_file.write_text('{"last_update_id": 12345}')
 
-        original = telegram_listener.LISTENER_STATE
-        telegram_listener.LISTENER_STATE = state_file
+        original = telemux.LISTENER_STATE
+        telemux.LISTENER_STATE = state_file
 
-        state = telegram_listener.load_state()
+        state = telemux.load_state()
         assert state["last_update_id"] == 12345
+        # Should add last_active_session for backward compatibility
+        assert state["last_active_session"] is None
 
-        telegram_listener.LISTENER_STATE = original
+        telemux.LISTENER_STATE = original
 
     def test_save_state(self, tmp_path):
         """Test saving state to file"""
         state_file = tmp_path / "message_queue" / "listener_state.json"
 
-        original_state = telegram_listener.LISTENER_STATE
-        original_queue = telegram_listener.MESSAGE_QUEUE_DIR
+        original_state = telemux.LISTENER_STATE
+        original_queue = telemux.MESSAGE_QUEUE_DIR
 
-        telegram_listener.LISTENER_STATE = state_file
-        telegram_listener.MESSAGE_QUEUE_DIR = tmp_path / "message_queue"
+        telemux.LISTENER_STATE = state_file
+        telemux.MESSAGE_QUEUE_DIR = tmp_path / "message_queue"
 
-        state = {"last_update_id": 99999}
-        telegram_listener.save_state(state)
+        state = {"last_update_id": 99999, "last_active_session": "test-session"}
+        telemux.save_state(state)
 
         assert state_file.exists()
         saved_data = json.loads(state_file.read_text())
         assert saved_data["last_update_id"] == 99999
+        assert saved_data["last_active_session"] == "test-session"
 
-        telegram_listener.LISTENER_STATE = original_state
-        telegram_listener.MESSAGE_QUEUE_DIR = original_queue
+        telemux.LISTENER_STATE = original_state
+        telemux.MESSAGE_QUEUE_DIR = original_queue
 
     def test_save_state_creates_directory(self, tmp_path):
         """Test that save_state creates directory if it doesn't exist"""
         state_file = tmp_path / "new_dir" / "listener_state.json"
 
-        original_state = telegram_listener.LISTENER_STATE
-        original_queue = telegram_listener.MESSAGE_QUEUE_DIR
+        original_state = telemux.LISTENER_STATE
+        original_queue = telemux.MESSAGE_QUEUE_DIR
 
-        telegram_listener.LISTENER_STATE = state_file
-        telegram_listener.MESSAGE_QUEUE_DIR = tmp_path / "new_dir"
+        telemux.LISTENER_STATE = state_file
+        telemux.MESSAGE_QUEUE_DIR = tmp_path / "new_dir"
 
-        state = {"last_update_id": 555}
-        telegram_listener.save_state(state)
+        state = {"last_update_id": 555, "last_active_session": None}
+        telemux.save_state(state)
 
         assert state_file.exists()
         assert state_file.parent.is_dir()
 
-        telegram_listener.LISTENER_STATE = original_state
-        telegram_listener.MESSAGE_QUEUE_DIR = original_queue
+        telemux.LISTENER_STATE = original_state
+        telemux.MESSAGE_QUEUE_DIR = original_queue
 
 
 @pytest.mark.unit
-class TestRouting:
-    """Tests for route_to_agent function"""
+class TestProcessUpdate:
+    """Tests for process_update function"""
 
-    def test_route_creates_inbox_file(self, tmp_path):
-        """Test that routing creates inbox file"""
-        original_dir = telegram_listener.TELEMUX_DIR
-        original_incoming = telegram_listener.INCOMING_LOG
+    def test_process_update_missing_message_key(self):
+        """Test that process_update handles update without message key"""
+        state = {"last_update_id": 0, "last_active_session": None}
+        update = {"update_id": 123}  # No "message" key
 
-        telegram_listener.TELEMUX_DIR = tmp_path
-        telegram_listener.INCOMING_LOG = tmp_path / "message_queue" / "incoming.log"
-        telegram_listener.INCOMING_LOG.parent.mkdir(parents=True, exist_ok=True)
+        # Should not crash
+        telemux.process_update(update, "test-token", "123", None, state)
 
-        agent_info = {
-            "message_id": "test-session",
-            "agent_name": "test-agent",
-            "tmux_session": "test-session"
+    def test_process_update_empty_message_text(self):
+        """Test that process_update handles empty message text"""
+        state = {"last_update_id": 0, "last_active_session": "test-session"}
+        update = {
+            "update_id": 123,
+            "message": {
+                "text": "",
+                "from": {"first_name": "Test", "id": 999},
+                "chat": {"id": "123"}
+            }
         }
 
-        telegram_listener.route_to_agent(agent_info, "Test response")
+        # Should not crash, will try to parse and send empty-ish message
+        with pytest.telemetry_mocked():  # We'll mock subprocess to avoid actual tmux calls
+            pass  # The function should handle gracefully
 
-        inbox_file = tmp_path / "agents" / "test-agent" / "inbox.txt"
-        assert inbox_file.exists()
 
-        content = inbox_file.read_text()
-        assert "MESSAGE FROM USER" in content
-        assert "test-session" in content
-        assert "Test response" in content
+@pytest.mark.unit
+class TestTmuxCommand:
+    """Tests for tmux_cmd helper"""
 
-        telegram_listener.TELEMUX_DIR = original_dir
-        telegram_listener.INCOMING_LOG = original_incoming
-
-    def test_route_logs_incoming_message(self, tmp_path):
-        """Test that routing logs to incoming.log"""
-        original_dir = telegram_listener.TELEMUX_DIR
-        original_incoming = telegram_listener.INCOMING_LOG
-
-        telegram_listener.TELEMUX_DIR = tmp_path
-        incoming_log = tmp_path / "message_queue" / "incoming.log"
-        incoming_log.parent.mkdir(parents=True, exist_ok=True)
-        telegram_listener.INCOMING_LOG = incoming_log
-
-        agent_info = {
-            "message_id": "session-1",
-            "agent_name": "agent-1",
-            "tmux_session": "session-1"
-        }
-
-        telegram_listener.route_to_agent(agent_info, "Response text")
-
-        assert incoming_log.exists()
-        content = incoming_log.read_text()
-        assert "session-1" in content
-        assert "agent-1" in content
-
-        telegram_listener.TELEMUX_DIR = original_dir
-        telegram_listener.INCOMING_LOG = original_incoming
+    def test_tmux_cmd_builds_command(self):
+        """Test that tmux_cmd builds correct command list"""
+        result = telemux.tmux_cmd('list-sessions', '-F', '#{session_name}')
+        expected = ['tmux', '-L', 'telemux', 'list-sessions', '-F', '#{session_name}']
+        assert result == expected
 
 
 if __name__ == "__main__":

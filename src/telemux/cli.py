@@ -3,7 +3,7 @@ Main CLI entry point for TeleMux
 """
 
 import sys
-from . import control
+from . import control, __version__
 
 
 def main():
@@ -23,6 +23,7 @@ def main():
         print("  attach   - Attach to the listener tmux session")
         print("  cleanup  - Rotate and clean up log files")
         print("  doctor   - Run health check and diagnose issues")
+        print("  version  - Show version information")
         print("")
         print("Shell Functions (available after installation):")
         print("  tg_alert \"message\"         - Send notification to Telegram")
@@ -35,6 +36,7 @@ def main():
         print("Examples:")
         print("  telemux install              # Run installer")
         print("  telemux start                # Start listener")
+        print("  telemux --version            # Show version")
         print("  tg_alert \"Build complete\"    # Send notification")
         print("")
         print("Documentation: https://github.com/malmazan/telemux")
@@ -42,7 +44,11 @@ def main():
 
     command = sys.argv[1]
 
-    if command == "install":
+    # Handle version flags
+    if command in ["--version", "-v", "version"]:
+        print(f"telemux {__version__}")
+        sys.exit(0)
+    elif command == "install":
         from .installer import main as installer_main
         installer_main()
     elif command == "start":

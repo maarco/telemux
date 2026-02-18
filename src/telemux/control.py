@@ -5,18 +5,21 @@ Control commands for TeleMux listener daemon
 import sys
 import time
 import subprocess
-import requests
-from pathlib import Path
 
-from . import TELEMUX_DIR, LOG_FILE, TMUX_SESSION
+from . import LOG_FILE, TMUX_SOCKET, TMUX_SESSION
 from .config import load_config
+
+
+def tmux_cmd(*args):
+    """Build tmux command with custom socket."""
+    return ['tmux', '-L', TMUX_SOCKET] + list(args)
 
 
 def is_listener_running() -> bool:
     """Check if the listener tmux session is running."""
     try:
         result = subprocess.run(
-            ['tmux', 'has-session', '-t', TMUX_SESSION],
+            tmux_cmd('has-session', '-t', TMUX_SESSION),
             capture_output=True,
             check=False
         )
@@ -30,7 +33,7 @@ def start():
     """Start the Telegram listener daemon."""
     if is_listener_running():
         print("Telegram listener is already running")
-        print(f"   Use: telemux-status")
+        print("   Use: telemux-status")
         sys.exit(1)
 
     print("Starting Telegram listener...")
@@ -38,7 +41,7 @@ def start():
     # Start tmux session with the listener module
     # Use -m flag to run as module, which handles imports correctly
     subprocess.run(
-        ['tmux', 'new-session', '-d', '-s', TMUX_SESSION, 'python3', '-m', 'telemux.listener'],
+        tmux_cmd('new-session', '-d', '-s', TMUX_SESSION, 'python3', '-m', 'telemux.listener'),
         check=False
     )
     time.sleep(1)
@@ -65,7 +68,7 @@ def stop():
         sys.exit(0)
 
     print("Stopping Telegram listener...")
-    subprocess.run(['tmux', 'kill-session', '-t', TMUX_SESSION], check=False)
+    subprocess.run(tmux_cmd('kill-session', '-t', TMUX_SESSION), check=False)
     print("Telegram listener stopped")
 
 
@@ -115,7 +118,7 @@ def logs():
 def attach():
     """Attach to the listener tmux session."""
     if is_listener_running():
-        subprocess.run(['tmux', 'attach-session', '-t', TMUX_SESSION])
+        subprocess.run(tmux_cmd('attach-session', '-t', TMUX_SESSION))
     else:
         print("Telegram listener is not running")
         sys.exit(1)
@@ -165,16 +168,15 @@ def doctor():
         print(f"   Config file exists: {CONFIG_FILE}")
 
         # Check permissions
-        import stat
         perms = oct(CONFIG_FILE.stat().st_mode)[-3:]
         if perms == "600":
-            print(f"   Config file permissions are secure (600)")
+            print("   Config file permissions are secure (600)")
         else:
             print(f"   Config file permissions: {perms} (should be 600)")
             print(f"   Fix with: chmod 600 {CONFIG_FILE}")
 
         # Check if credentials are set
-        bot_token, chat_id = load_config()
+        bot_token, chat_id, user_id = load_config()
         if bot_token:
             print("   Bot token is set")
         else:
@@ -192,6 +194,11 @@ def doctor():
                 print("   Chat ID format may be invalid")
         else:
             print("   Chat ID is NOT set")
+
+        if user_id:
+            print(f"   User ID is set ({user_id}) - Enhanced security enabled")
+        else:
+            print("   User ID is NOT set - Consider setting for enhanced security")
     else:
         print(f"   Config file NOT found: {CONFIG_FILE}")
         print("   Run: telemux-install")
@@ -199,7 +206,7 @@ def doctor():
 
     # Test bot connection
     print("Testing Telegram bot connection...")
-    bot_token, chat_id = load_config()
+    bot_token, chat_id, _ = load_config()
     if bot_token:
         try:
             response = requests.get(f"https://api.telegram.org/bot{bot_token}/getMe", timeout=10)
@@ -270,7 +277,7 @@ def main():
     if len(sys.argv) < 2:
         print("TeleMux Control")
         print("")
-        print(f"Usage: telemux <command>")
+        print("Usage: telemux <command>")
         print("")
         print("Commands:")
         print("  start    - Start the listener daemon")

@@ -10,7 +10,7 @@ import subprocess
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from . import TELEMUX_DIR, MESSAGE_QUEUE_DIR, LOG_FILE
+from . import MESSAGE_QUEUE_DIR, LOG_FILE
 
 
 # Configuration
@@ -95,11 +95,7 @@ def install_cron():
     print("")
     print("Installing cron job for monthly log rotation...")
 
-    # Get the path to this script
-    import telemux.cleanup
-    cleanup_path = telemux.cleanup.__file__
-
-    cron_cmd = f"0 0 1 * * python3 -m telemux.cleanup"
+    cron_cmd = "0 0 1 * * python3 -m telemux.cleanup"
 
     try:
         # Get current crontab

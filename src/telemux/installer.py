@@ -6,10 +6,10 @@ import os
 import sys
 import subprocess
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Optional
 import requests
 
-from . import TELEMUX_DIR, MESSAGE_QUEUE_DIR, CONFIG_FILE
+from . import TELEMUX_DIR
 from .config import ensure_directories, save_config
 
 
@@ -92,9 +92,9 @@ def get_available_chats(bot_token: str) -> List[Dict]:
                     chat_info = {
                         "id": chat_id,
                         "type": chat["type"],
-                        "name": chat.get("title") or
-                                f"{chat.get('first_name', '')} {chat.get('last_name', '')}".strip() or
-                                "Unknown"
+                        "name": (chat.get("title") or
+                                 f"{chat.get('first_name', '')} {chat.get('last_name', '')}".strip() or
+                                 "Unknown")
                     }
                     chats[chat_id] = chat_info
 
@@ -187,7 +187,8 @@ def get_chat_id_interactive(bot_token: str) -> Optional[str]:
 def test_telegram_connection(bot_token: str, chat_id: str) -> bool:
     """Send a test message to verify configuration."""
     print("Verifying chat ID...")
-    test_message = f"TeleMux installation test - {subprocess.run(['date'], capture_output=True, text=True).stdout.strip()}"
+    date_output = subprocess.run(['date'], capture_output=True, text=True).stdout.strip()
+    test_message = f"TeleMux installation test - {date_output}"
 
     try:
         response = requests.post(
@@ -313,7 +314,8 @@ def update_claude_config():
         f.write('\n')
         f.write('## Usage in Agents\n')
         f.write('\n')
-        f.write('When running in tmux, agents can use `tg_agent` to ask questions and receive user replies via Telegram. Replies are delivered directly back to the tmux session.\n')
+        f.write('When running in tmux, agents can use `tg_agent` to ask questions and receive user '
+                'replies via Telegram. Replies are delivered directly back to the tmux session.\n')
         f.write('\n')
         f.write('**Example:**\n')
         f.write('```bash\n')

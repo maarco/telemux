@@ -216,6 +216,28 @@ The reply is automatically routed to the correct tmux session and appears in you
 - Session names are validated before routing
 - No session names are revealed in error messages
 
+**Bypass Sanitization (Advanced):**
+
+By default, all messages are sanitized using `shlex.quote()` to prevent command injection. If you need to send raw commands with special characters, prefix your message with `!`:
+
+```bash
+# Normal (sanitized) - safe for user input
+session-name: echo "Hello World"
+
+# Bypass sanitization - execute command directly and get output
+session-name: !ls -la
+session-name: !echo "Current directory: $(pwd)"
+session-name: !git status
+```
+
+When using the `!` prefix, TeleMux will:
+1. Execute the command directly without sanitization
+2. Wait 2 seconds for the command to complete
+3. Capture the last 100 lines of terminal output
+4. Send the output back to you via Telegram
+
+**WARNING:** The `!` prefix disables all security sanitization. Only use this when you control the input and understand the security implications. Malicious use could execute arbitrary commands.
+
 ## Configuration
 
 Configuration is stored in `~/.telemux/`:

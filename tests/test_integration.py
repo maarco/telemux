@@ -14,14 +14,14 @@ import subprocess
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import telegram_listener
+import telemux
 
 
 @pytest.mark.integration
 class TestFullWorkflow:
     """Integration tests for complete message routing workflow"""
 
-    @patch('telegram_listener.send_telegram_message')
+    @patch('telemux.send_telegram_message')
     @patch('subprocess.run')
     def test_process_update_delivers_to_tmux(self, mock_subprocess, mock_send_telegram):
         """Test that process_update successfully delivers message to tmux session"""
@@ -55,7 +55,7 @@ class TestFullWorkflow:
         }
 
         # Process update
-        telegram_listener.process_update(update)
+        telemux.process_update(update)
 
         # Verify tmux send-keys was called twice (text + Enter)
         assert mock_subprocess.call_count >= 3  # list-sessions + send-keys + send-keys (Enter)
@@ -66,7 +66,7 @@ class TestFullWorkflow:
         assert "test-session" in call_args
         assert "delivered" in call_args.lower()
 
-    @patch('telegram_listener.send_telegram_message')
+    @patch('telemux.send_telegram_message')
     @patch('subprocess.run')
     def test_process_update_session_not_found(self, mock_subprocess, mock_send_telegram):
         """Test that process_update handles missing tmux session"""
@@ -84,14 +84,14 @@ class TestFullWorkflow:
             }
         }
 
-        telegram_listener.process_update(update)
+        telemux.process_update(update)
 
         # Verify error message sent to Telegram
         mock_send_telegram.assert_called_once()
         call_args = mock_send_telegram.call_args[0][0]
         assert "not found" in call_args.lower()
 
-    @patch('telegram_listener.send_telegram_message')
+    @patch('telemux.send_telegram_message')
     def test_process_update_invalid_format(self, mock_send_telegram):
         """Test that process_update ignores invalid message format"""
         update = {
@@ -102,12 +102,12 @@ class TestFullWorkflow:
             }
         }
 
-        telegram_listener.process_update(update)
+        telemux.process_update(update)
 
         # Should not send any Telegram message
         mock_send_telegram.assert_not_called()
 
-    @patch('telegram_listener.send_telegram_message')
+    @patch('telemux.send_telegram_message')
     @patch('subprocess.run')
     def test_process_update_no_tmux_sessions(self, mock_subprocess, mock_send_telegram):
         """Test handling when no tmux sessions are running"""
@@ -124,14 +124,14 @@ class TestFullWorkflow:
             }
         }
 
-        telegram_listener.process_update(update)
+        telemux.process_update(update)
 
         # Verify error message sent
         mock_send_telegram.assert_called_once()
         call_args = mock_send_telegram.call_args[0][0]
         assert "no tmux sessions" in call_args.lower()
 
-    @patch('telegram_listener.send_telegram_message')
+    @patch('telemux.send_telegram_message')
     @patch('subprocess.run')
     def test_process_update_sanitizes_input(self, mock_subprocess, mock_send_telegram):
         """Test that malicious input is sanitized to prevent command injection"""
@@ -165,7 +165,7 @@ class TestFullWorkflow:
             }
         }
 
-        telegram_listener.process_update(update)
+        telemux.process_update(update)
 
         # Verify message was delivered (after sanitization)
         mock_send_telegram.assert_called_once()
@@ -189,9 +189,9 @@ class TestTelegramAPI:
         mock_get.return_value = mock_response
 
         # Set bot token for testing
-        telegram_listener.BOT_TOKEN = "test-token"
+        telemux.BOT_TOKEN = "test-token"
 
-        updates = telegram_listener.get_telegram_updates(offset=0)
+        updates = telemux.get_telegram_updates(offset=0)
 
         assert len(updates) == 2
         assert updates[0]["update_id"] == 1
@@ -212,9 +212,9 @@ class TestTelegramAPI:
             mock_response
         ]
 
-        telegram_listener.BOT_TOKEN = "test-token"
+        telemux.BOT_TOKEN = "test-token"
 
-        updates = telegram_listener.get_telegram_updates(offset=0, max_retries=2)
+        updates = telemux.get_telegram_updates(offset=0, max_retries=2)
 
         # Should retry and eventually succeed
         assert updates == []
@@ -226,9 +226,9 @@ class TestTelegramAPI:
         import requests
         mock_get.side_effect = requests.exceptions.Timeout("Connection timeout")
 
-        telegram_listener.BOT_TOKEN = "test-token"
+        telemux.BOT_TOKEN = "test-token"
 
-        updates = telegram_listener.get_telegram_updates(offset=0, max_retries=3)
+        updates = telemux.get_telegram_updates(offset=0, max_retries=3)
 
         # Should return empty list after max retries
         assert updates == []
@@ -241,10 +241,10 @@ class TestTelegramAPI:
         mock_response.json.return_value = {"ok": True}
         mock_post.return_value = mock_response
 
-        telegram_listener.BOT_TOKEN = "test-token"
-        telegram_listener.CHAT_ID = "12345"
+        telemux.BOT_TOKEN = "test-token"
+        telemux.CHAT_ID = "12345"
 
-        result = telegram_listener.send_telegram_message("Test message")
+        result = telemux.send_telegram_message("Test message")
 
         assert result is True
         mock_post.assert_called_once()
@@ -264,10 +264,10 @@ class TestTelegramAPI:
             mock_response
         ]
 
-        telegram_listener.BOT_TOKEN = "test-token"
-        telegram_listener.CHAT_ID = "12345"
+        telemux.BOT_TOKEN = "test-token"
+        telemux.CHAT_ID = "12345"
 
-        result = telegram_listener.send_telegram_message("Test", max_retries=3)
+        result = telemux.send_telegram_message("Test", max_retries=3)
 
         assert result is True
         assert mock_post.call_count == 3
@@ -278,8 +278,8 @@ class TestTelegramAPI:
 class TestEndToEnd:
     """End-to-end tests simulating real workflow"""
 
-    @patch('telegram_listener.get_telegram_updates')
-    @patch('telegram_listener.send_telegram_message')
+    @patch('telemux.get_telegram_updates')
+    @patch('telemux.send_telegram_message')
     @patch('subprocess.run')
     def test_full_workflow_agent_response(
         self, mock_subprocess, mock_send_telegram, mock_get_updates, tmp_path
@@ -316,7 +316,7 @@ class TestEndToEnd:
         }
 
         # Process the update
-        telegram_listener.process_update(update)
+        telemux.process_update(update)
 
         # Verify tmux send-keys was called (text + Enter)
         assert mock_subprocess.call_count >= 3  # list-sessions + send-keys + send-keys (Enter)
